@@ -1,8 +1,9 @@
-import mongoose, { Schema, model, models, Document } from 'mongoose';
+import mongoose, { Schema, model, models, Document, Types } from 'mongoose';
 
 export interface IApplication extends Document {
-  _id: string;
+  _id: Types.ObjectId;
   userId: string;
+  userEmail: string; // Denormalized from token — used by cron reminder job
   company: string;
   role: string;
   status: 'Applied' | 'Interview' | 'Offer' | 'Rejected';
@@ -17,6 +18,7 @@ export interface IApplication extends Document {
 const ApplicationSchema = new Schema<IApplication>(
   {
     userId: { type: String, required: true, index: true },
+    userEmail: { type: String, required: true }, // Denormalized for cron reliability
     company: { type: String, required: true },
     role: { type: String, required: true },
     status: {

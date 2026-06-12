@@ -3,20 +3,25 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
 export async function proxy(req: NextRequest) {
-	const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
-	const isProtected =
-		req.nextUrl.pathname.startsWith('/dashboard') ||
-		req.nextUrl.pathname.startsWith('/api/applications');
+  const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
+  const path = req.nextUrl.pathname;
 
-	if (isProtected && !token) {
-		return NextResponse.redirect(new URL('/', req.url));
-	}
+  if (path.startsWith('/dashboard') && !token) {
+    // Browser navigation — redirect to landing page
+    return NextResponse.redirect(new URL('/', req.url));
+  }
 
-	return NextResponse.next();
+  if (path.startsWith('/api/applications') && !token) {
+    // API / fetch clients — return JSON 401 instead of a redirect
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  return NextResponse.next();
 }
 
-export { proxy as middleware };
-
 export const config = {
-	matcher: ['/dashboard/:path*', '/api/applications/:path*'],
+  matcher: ['/dashboard/:path*', '/api/applications/:path*'],
 };
+
+// Alias used by proxy.test.ts
+export const middleware = proxy;

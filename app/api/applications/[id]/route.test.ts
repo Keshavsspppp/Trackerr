@@ -133,7 +133,7 @@ describe('Property 6: Update mutates only the target user\'s application', () =>
           mockFindOneAndUpdate.mockResolvedValueOnce(updatedDoc as never);
 
           const patchReqA = makePatchRequest(appId, { status: newStatus });
-          const resA = await PATCH(patchReqA, { params: { id: appId } });
+          const resA = await PATCH(patchReqA, { params: Promise.resolve({ id: appId }) });
           const bodyA = await resA.json();
 
           expect(resA.status).toBe(200);
@@ -152,7 +152,7 @@ describe('Property 6: Update mutates only the target user\'s application', () =>
           mockFindOneAndUpdate.mockResolvedValueOnce(null as never);
 
           const patchReqB = makePatchRequest(appId, { status: newStatus });
-          const resB = await PATCH(patchReqB, { params: { id: appId } });
+          const resB = await PATCH(patchReqB, { params: Promise.resolve({ id: appId }) });
 
           expect(resB.status).toBe(404);
 
@@ -184,7 +184,7 @@ describe('PATCH /api/applications/[id] — unit tests for edge cases', () => {
 
     const nonExistentId = makeObjectId();
     const req = makePatchRequest(nonExistentId, { status: 'Interview' });
-    const res = await PATCH(req, { params: { id: nonExistentId } });
+    const res = await PATCH(req, { params: Promise.resolve({ id: nonExistentId }) });
     const body = await res.json();
 
     expect(res.status).toBe(404);
@@ -195,7 +195,7 @@ describe('PATCH /api/applications/[id] — unit tests for edge cases', () => {
     // Requirement 4.5: invalid status → 400
     const appId = makeObjectId();
     const req = makePatchRequest(appId, { status: 'NotAStatus' });
-    const res = await PATCH(req, { params: { id: appId } });
+    const res = await PATCH(req, { params: Promise.resolve({ id: appId }) });
     const body = await res.json();
 
     expect(res.status).toBe(400);
@@ -220,7 +220,7 @@ describe('PATCH /api/applications/[id] — unit tests for edge cases', () => {
     mockFindOneAndUpdate.mockResolvedValueOnce(updatedDoc as never);
 
     const req = makePatchRequest(appId, { status: 'Interview' });
-    const res = await PATCH(req, { params: { id: appId } });
+    const res = await PATCH(req, { params: Promise.resolve({ id: appId }) });
     const body = await res.json();
 
     expect(res.status).toBe(200);
@@ -266,7 +266,7 @@ describe('Property 7: Delete removes the application and enforces ownership', ()
           mockFindOneAndDelete.mockResolvedValueOnce(fakeDoc as never);
 
           const deleteReqA = makeDeleteRequest(appId);
-          const resA = await DELETE(deleteReqA, { params: { id: appId } });
+          const resA = await DELETE(deleteReqA, { params: Promise.resolve({ id: appId }) });
           const bodyA = await resA.json();
 
           expect(resA.status).toBe(200);
@@ -283,7 +283,7 @@ describe('Property 7: Delete removes the application and enforces ownership', ()
           mockFindOneAndDelete.mockResolvedValueOnce(null as never);
 
           const deleteReqB = makeDeleteRequest(appId);
-          const resB = await DELETE(deleteReqB, { params: { id: appId } });
+          const resB = await DELETE(deleteReqB, { params: Promise.resolve({ id: appId }) });
 
           expect(resB.status).toBe(404);
 
@@ -310,7 +310,7 @@ describe('DELETE /api/applications/[id] — not-found case', () => {
 
     const nonExistentId = makeObjectId();
     const req = makeDeleteRequest(nonExistentId);
-    const res = await DELETE(req, { params: { id: nonExistentId } });
+    const res = await DELETE(req, { params: Promise.resolve({ id: nonExistentId }) });
     const body = await res.json();
 
     expect(res.status).toBe(404);

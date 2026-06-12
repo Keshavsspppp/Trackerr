@@ -84,6 +84,7 @@ function makeGetRequest(authHeader?: string): NextRequest {
 function buildFakeApp(overrides: {
   id?: string;
   userId?: string;
+  userEmail?: string;
   company?: string;
   role?: string;
   status?: string;
@@ -93,6 +94,7 @@ function buildFakeApp(overrides: {
   return {
     _id: overrides.id ?? `id-${Math.random()}`,
     userId: overrides.userId ?? 'user-123',
+    userEmail: overrides.userEmail ?? 'user@example.com',
     company: overrides.company ?? 'Acme Corp',
     role: overrides.role ?? 'Software Engineer',
     status: overrides.status ?? 'Applied',

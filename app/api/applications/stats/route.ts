@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getToken } from 'next-auth/jwt';
 import { connectDB } from '@/src/lib/mongodb';
 import { Application } from '@/src/models/Application';
+import { logError } from '@/src/lib/logger';
 
 export interface IApplicationStats {
   total: number;
@@ -79,7 +80,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
 
     return NextResponse.json(stats, { status: 200 });
   } catch (err) {
-    console.error('[GET /api/applications/stats]', err);
+    logError('[GET /api/applications/stats]', err);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

@@ -72,11 +72,11 @@ describe('authOptions configuration', () => {
     expect(sessionCallback).toBeDefined();
 
     const result = await sessionCallback!({
-      session: mockSession as Parameters<typeof sessionCallback>[0]['session'],
-      token: mockToken as Parameters<typeof sessionCallback>[0]['token'],
-      // newSession and trigger are required by some overloads but not used here
-      newSession: undefined,
-      trigger: 'getSession' as const,
+      session: mockSession as any,
+      token: mockToken as any,
+      user: { id: 'user-abc-123', email: 'test@example.com' } as any,
+      newSession: undefined as any,
+      trigger: 'update' as const,
     });
 
     expect((result.user as { id?: string }).id).toBe('user-abc-123');

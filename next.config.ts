@@ -1,7 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  compress: true, // Enable gzip compression for API responses and static assets
 };
 
 export default nextConfig;

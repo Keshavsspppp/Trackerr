@@ -6,10 +6,29 @@
 // Returns { processed, sent, errors } with HTTP 200.
 
 import { NextRequest, NextResponse } from 'next/server';
+import { timingSafeEqual } from 'crypto';
 import { Resend } from 'resend';
 import { connectDB } from '@/src/lib/mongodb';
 import { Application } from '@/src/models/Application';
-import mongoose from 'mongoose';
+import { logError } from '@/src/lib/logger';
+
+/**
+ * Timing-safe string comparison — prevents timing attacks on the CRON_SECRET.
+ * Pads/truncates both sides to the same byte length before comparing so that
+ * `timingSafeEqual` (which requires equal-length buffers) never throws.
+ * 
+ * @param a - First string to compare
+ * @param b - Second string to compare
+ * @returns true if the strings are equal, false otherwise
+ */
+function safeCompare(a: string, b: string): boolean {
+  const len = Math.max(Buffer.byteLength(a), Buffer.byteLength(b));
+  const bufA = Buffer.alloc(len);
+  const bufB = Buffer.alloc(len);
+  bufA.write(a);
+  bufB.write(b);
+  return timingSafeEqual(bufA, bufB);
+}
 
 // ---------------------------------------------------------------------------
 // Pure helper — exported for direct unit/property testing
@@ -20,6 +39,11 @@ import mongoose from 'mongoose';
  *   - status === "Applied"
  *   - lastUpdated is older than thresholdDays before `now`
  *   - lastReminderSent is null/undefined OR older than thresholdDays before `now`
+ * 
+ * @param app - Application document with status, lastUpdated, and optional lastReminderSent
+ * @param now - Current date/time for comparison
+ * @param thresholdDays - Number of days after which an application is considered stale (default: 7)
+ * @returns true if the application meets all staleness criteria
  */
 export function isStaleApplication(
   app: {
@@ -54,11 +78,12 @@ export function isStaleApplication(
 // ---------------------------------------------------------------------------
 
 export async function GET(req: NextRequest) {
-  // Auth guard: validate CRON_SECRET
+  // Auth guard: validate CRON_SECRET with a timing-safe comparison
   const authHeader = req.headers.get('authorization');
   const expectedToken = process.env.CRON_SECRET;
 
-  if (!authHeader || authHeader !== `Bearer ${expectedToken}`) {
+  // Reject immediately if either side is missing (timingSafeEqual requires strings)
+  if (!authHeader || !expectedToken || !safeCompare(authHeader, `Bearer ${expectedToken}`)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
@@ -86,37 +111,18 @@ export async function GET(req: NextRequest) {
 
     for (const app of staleApps) {
       try {
-        // Look up user email from the users collection
-        const db = mongoose.connection.db;
-        let userEmail: string | null = null;
-
-        if (db) {
-          const usersCollection = db.collection('users');
-
-          // Build query: try ObjectId cast first (NextAuth stores users with ObjectId _id),
-          // but fall back to plain string if userId isn't a valid 24-char hex string.
-          let userQuery: object;
-          try {
-            userQuery = { _id: new mongoose.Types.ObjectId(app.userId) };
-          } catch {
-            userQuery = { _id: app.userId };
-          }
-
-          const user = await usersCollection.findOne(userQuery);
-          userEmail = user?.email ?? null;
-        }
-
-        if (!userEmail) {
+        // Use the denormalized userEmail field directly — no cross-collection lookup needed
+        if (!app.userEmail) {
           console.warn(
-            `[cron/reminders] No email found for userId=${app.userId}, skipping app=${app._id}`
+            `[cron/reminders] No email stored for app=${app._id}, skipping`
           );
           errors++;
           continue;
         }
 
         await resend.emails.send({
-          from: 'noreply@jobtracker.app',
-          to: userEmail,
+          from: process.env.RESEND_FROM_EMAIL ?? 'noreply@jobtracker.app',
+          to: app.userEmail,
           subject: 'Follow up on your application',
           html: `<p>Don't forget to follow up on your application for <strong>${app.role}</strong> at <strong>${app.company}</strong>.</p>`,
         });
@@ -138,7 +144,7 @@ export async function GET(req: NextRequest) {
       { status: 200 }
     );
   } catch (err) {
-    console.error('[GET /api/cron/reminders]', err);
+    logError('[GET /api/cron/reminders]', err);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

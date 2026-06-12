@@ -85,7 +85,11 @@ In [Google Cloud Console](https://console.cloud.google.com/):
 
 ### 5. Whitelist your IP in MongoDB Atlas
 
-Network Access → Add IP Address → Add Current IP Address (or `0.0.0.0/0` for dev)
+Network Access → Add IP Address → Add Current IP Address (or `0.0.0.0/0` for **local dev only**)
+
+**⚠️ Security Warning**: Never use `0.0.0.0/0` in production. For Vercel deployments, either:
+- Add Vercel's IP ranges (see [Vercel docs](https://vercel.com/docs/security/deployment-protection))
+- Use Atlas Private Endpoints (recommended for production)
 
 ### 6. Run the dev server
 
@@ -144,12 +148,30 @@ The test suite includes **50 tests** across 7 files — unit tests and property-
 5. Set `NEXTAUTH_URL=https://your-app.vercel.app` in Vercel env vars
 6. Deploy — the cron job runs automatically daily at 09:00 UTC
 
+**Note**: The cron schedule (`0 9 * * *` = 09:00 UTC daily) is defined in `vercel.json`. To change it:
+- Edit the `schedule` field using [cron syntax](https://crontab.guru/)
+- Example: `0 17 * * *` = 5 PM UTC (9 AM PST, 12 PM EST)
+
 ### Test the cron endpoint manually
 
 ```bash
 curl -X GET https://your-app.vercel.app/api/cron/reminders \
   -H "Authorization: Bearer YOUR_CRON_SECRET"
 ```
+
+---
+
+## Monitoring & Observability
+
+For production deployments, consider adding:
+
+- **Vercel Analytics** — built-in traffic and performance metrics
+  - Enable in Vercel Dashboard → Analytics
+- **Sentry** — error tracking and alerting
+  - Install: `npm install @sentry/nextjs`
+  - Configure `sentry.client.config.ts` and `sentry.server.config.ts`
+- **Custom logging** — structured logs with correlation IDs
+  - Already sanitized for production via `src/lib/logger.ts`
 
 ---
 

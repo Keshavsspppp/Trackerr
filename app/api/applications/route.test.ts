@@ -35,7 +35,7 @@ vi.mock('@/src/models/Application', () => {
 // ---------------------------------------------------------------------------
 import { getToken } from 'next-auth/jwt';
 import { Application } from '@/src/models/Application';
-import { POST, GET } from './route';
+import { POST, GET, rateLimitMap } from './route';
 
 const mockGetToken = vi.mocked(getToken);
 const mockCreate = vi.mocked(Application.create);
@@ -87,10 +87,12 @@ function buildFakeApp(overrides: {
 }
 
 // ---------------------------------------------------------------------------
-// Reset mocks before each test
+// Reset mocks AND rate limiter before each test
 // ---------------------------------------------------------------------------
 beforeEach(() => {
   vi.clearAllMocks();
+  // Clear rate limiter state between tests
+  rateLimitMap.clear();
 });
 
 // ===========================================================================
@@ -100,8 +102,6 @@ beforeEach(() => {
 describe('Property 1: Application creation persists correctly', () => {
   it('returns 201 and the created document with matching fields for any valid input', async () => {
     // Feature: job-application-tracker, Property 1: Application creation persists correctly
-    const userId = 'user-abc';
-    mockGetToken.mockResolvedValue({ sub: userId } as never);
 
     await fc.assert(
       fc.asyncProperty(
@@ -110,6 +110,10 @@ describe('Property 1: Application creation persists correctly', () => {
         fc.string({ minLength: 1 }).filter((s) => s.trim().length > 0),
         fc.constantFrom('Applied', 'Interview', 'Offer', 'Rejected'),
         async (company, role, status) => {
+          // Use unique userId per iteration to avoid rate limit across runs
+          const userId = `user-${Math.random().toString(36).substring(7)}`;
+          mockGetToken.mockResolvedValue({ sub: userId, email: 'user@example.com' } as never);
+
           const trimmedCompany = company.trim();
           const trimmedRole = role.trim();
           const fakeDoc = buildFakeApp({ userId, company: trimmedCompany, role: trimmedRole, status });
@@ -137,7 +141,7 @@ describe('Property 1: Application creation persists correctly', () => {
 // ===========================================================================
 describe('Property 2: Invalid inputs are rejected with HTTP 400', () => {
   beforeEach(() => {
-    mockGetToken.mockResolvedValue({ sub: 'user-xyz' } as never);
+    // Use unique userId per iteration inside the properties
   });
 
   it('returns 400 when company is empty or whitespace-only', async () => {
@@ -147,6 +151,10 @@ describe('Property 2: Invalid inputs are rejected with HTTP 400', () => {
         fc.oneof(fc.constant(''), fc.string().filter((s) => !s.trim())),
         fc.string({ minLength: 1 }), // valid role
         async (emptyCompany, role) => {
+          // Use unique userId per iteration to avoid rate limit
+          const userId = `user-${Math.random().toString(36).substring(7)}`;
+          mockGetToken.mockResolvedValue({ sub: userId, email: 'user@example.com' } as never);
+
           const req = makePostRequest({ company: emptyCompany, role });
           const res = await POST(req);
 
@@ -164,6 +172,10 @@ describe('Property 2: Invalid inputs are rejected with HTTP 400', () => {
         fc.string({ minLength: 1 }), // valid company
         fc.oneof(fc.constant(''), fc.string().filter((s) => !s.trim())),
         async (company, emptyRole) => {
+          // Use unique userId per iteration to avoid rate limit
+          const userId = `user-${Math.random().toString(36).substring(7)}`;
+          mockGetToken.mockResolvedValue({ sub: userId, email: 'user@example.com' } as never);
+
           const req = makePostRequest({ company, role: emptyRole });
           const res = await POST(req);
 
@@ -184,6 +196,10 @@ describe('Property 2: Invalid inputs are rejected with HTTP 400', () => {
         fc.string({ minLength: 1 }), // valid role
         fc.string().filter((s) => !validStatuses.includes(s) && s.length > 0),
         async (company, role, badStatus) => {
+          // Use unique userId per iteration to avoid rate limit
+          const userId = `user-${Math.random().toString(36).substring(7)}`;
+          mockGetToken.mockResolvedValue({ sub: userId, email: 'user@example.com' } as never);
+
           const req = makePostRequest({ company, role, status: badStatus });
           const res = await POST(req);
 
@@ -224,7 +240,9 @@ describe('Property 3: Application list is user-scoped', () => {
 
           // Mock find() to return only userA's apps (as a real scoped query would)
           const findResult = {
-            sort: vi.fn().mockResolvedValue(appsForA),
+            sort: vi.fn().mockReturnThis(),
+            limit: vi.fn().mockReturnThis(),
+            skip: vi.fn().mockResolvedValue(appsForA),
           };
           mockFind.mockReturnValueOnce(findResult as never);
 
@@ -279,7 +297,9 @@ describe('Property 4: Status filter returns only matching applications', () => {
           );
 
           const findResult = {
-            sort: vi.fn().mockResolvedValue(matchingApps),
+            sort: vi.fn().mockReturnThis(),
+            limit: vi.fn().mockReturnThis(),
+            skip: vi.fn().mockResolvedValue(matchingApps),
           };
           mockFind.mockReturnValueOnce(findResult as never);
 
@@ -349,7 +369,9 @@ describe('Property 5: Application list is sorted by createdAt descending', () =>
           );
 
           const findResult = {
-            sort: vi.fn().mockResolvedValue(apps),
+            sort: vi.fn().mockReturnThis(),
+            limit: vi.fn().mockReturnThis(),
+            skip: vi.fn().mockResolvedValue(apps),
           };
           mockFind.mockReturnValueOnce(findResult as never);
 

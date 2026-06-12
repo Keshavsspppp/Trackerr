@@ -1,24 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getToken } from 'next-auth/jwt';
+import mongoose from 'mongoose';
 import { connectDB } from '@/src/lib/mongodb';
 import { Application } from '@/src/models/Application';
-
-const VALID_STATUSES = ['Applied', 'Interview', 'Offer', 'Rejected'] as const;
-type ValidStatus = (typeof VALID_STATUSES)[number];
-
-function isValidStatus(value: unknown): value is ValidStatus {
-  return (
-    typeof value === 'string' &&
-    (VALID_STATUSES as readonly string[]).includes(value)
-  );
-}
+import { isValidStatus, type ValidStatus } from '@/src/lib/validation';
+import { logError } from '@/src/lib/logger';
 
 // ---------------------------------------------------------------------------
 // PATCH /api/applications/[id] — update an application
 // ---------------------------------------------------------------------------
 export async function PATCH(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
@@ -27,7 +20,12 @@ export async function PATCH(
     }
 
     const userId = token.sub;
-    const { id } = params;
+    const { id } = await params;
+
+    // Reject malformed ObjectIds before hitting Mongoose — avoids a CastError → 500
+    if (!mongoose.isValidObjectId(id)) {
+      return NextResponse.json({ error: 'Invalid application id' }, { status: 400 });
+    }
 
     const body = await req.json();
     const { status, notes, jobUrl, appliedDate } = body;
@@ -43,15 +41,36 @@ export async function PATCH(
       );
     }
 
+    // Validate jobUrl — must be a string when provided
+    if (jobUrl !== undefined && typeof jobUrl !== 'string') {
+      return NextResponse.json(
+        { error: 'jobUrl must be a string' },
+        { status: 400 }
+      );
+    }
+
+    // Validate appliedDate — must parse to a real date when provided
+    if (appliedDate !== undefined) {
+      const parsed = new Date(appliedDate);
+      if (isNaN(parsed.getTime())) {
+        return NextResponse.json(
+          { error: 'appliedDate must be a valid date string' },
+          { status: 400 }
+        );
+      }
+    }
+
     await connectDB();
 
-    const updateFields: Record<string, unknown> = {
-      lastUpdated: new Date(),
-    };
-    if (status !== undefined) updateFields.status = status;
+    const updateFields: Record<string, unknown> = {};
+    if (status !== undefined) {
+      updateFields.status = status;
+      // Only reset the staleness clock when the user actually changes status
+      updateFields.lastUpdated = new Date();
+    }
     if (notes !== undefined) updateFields.notes = notes;
     if (jobUrl !== undefined) updateFields.jobUrl = jobUrl;
-    if (appliedDate !== undefined) updateFields.appliedDate = appliedDate;
+    if (appliedDate !== undefined) updateFields.appliedDate = new Date(appliedDate);
 
     const updated = await Application.findOneAndUpdate(
       { _id: id, userId },
@@ -68,7 +87,7 @@ export async function PATCH(
 
     return NextResponse.json(updated, { status: 200 });
   } catch (err) {
-    console.error('[PATCH /api/applications/[id]]', err);
+    logError('[PATCH /api/applications/[id]]', err);
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
@@ -81,7 +100,7 @@ export async function PATCH(
 // ---------------------------------------------------------------------------
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
@@ -90,7 +109,12 @@ export async function DELETE(
     }
 
     const userId = token.sub;
-    const { id } = params;
+    const { id } = await params;
+
+    // Reject malformed ObjectIds before hitting Mongoose
+    if (!mongoose.isValidObjectId(id)) {
+      return NextResponse.json({ error: 'Invalid application id' }, { status: 400 });
+    }
 
     await connectDB();
 
@@ -105,7 +129,7 @@ export async function DELETE(
 
     return NextResponse.json({ message: 'Deleted' }, { status: 200 });
   } catch (err) {
-    console.error('[DELETE /api/applications/[id]]', err);
+    logError('[DELETE /api/applications/[id]]', err);
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

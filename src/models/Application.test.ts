@@ -10,6 +10,7 @@ describe('Application schema validation', () => {
   it('throws a ValidationError when company is missing', async () => {
     const doc = new Application({
       userId: 'user-1',
+      userEmail: 'user@example.com',
       // company is intentionally omitted
       role: 'Software Engineer',
     });
@@ -20,6 +21,7 @@ describe('Application schema validation', () => {
   it('throws a ValidationError when role is missing', async () => {
     const doc = new Application({
       userId: 'user-1',
+      userEmail: 'user@example.com',
       company: 'Acme Corp',
       // role is intentionally omitted
     });
@@ -30,6 +32,7 @@ describe('Application schema validation', () => {
   it('throws a ValidationError when both company and role are missing', async () => {
     const doc = new Application({
       userId: 'user-1',
+      userEmail: 'user@example.com',
       // company and role both omitted
     });
 
@@ -39,6 +42,7 @@ describe('Application schema validation', () => {
   it('throws a ValidationError when status is an invalid enum value', async () => {
     const doc = new Application({
       userId: 'user-1',
+      userEmail: 'user@example.com',
       company: 'Acme Corp',
       role: 'Software Engineer',
       status: 'Pending', // not a valid status
@@ -50,6 +54,7 @@ describe('Application schema validation', () => {
   it('defaults status to "Applied" when status is omitted', async () => {
     const doc = new Application({
       userId: 'user-1',
+      userEmail: 'user@example.com',
       company: 'Acme Corp',
       role: 'Software Engineer',
     });
@@ -65,6 +70,7 @@ describe('Application schema validation', () => {
     for (const status of validStatuses) {
       const doc = new Application({
         userId: 'user-1',
+        userEmail: 'user@example.com',
         company: 'Acme Corp',
         role: 'Software Engineer',
         status,
