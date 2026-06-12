@@ -2,12 +2,15 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useSession, signOut } from "next-auth/react";
 import StatsCards from "@/src/components/StatsCards";
 import StatusFilter from "@/src/components/StatusFilter";
 import ApplicationForm from "@/src/components/ApplicationForm";
 import ApplicationList, {
   IApplication,
 } from "@/src/components/ApplicationList";
+import SlideOver from "@/src/components/SlideOver";
+import { useToast } from "@/src/components/Toast";
 import type { IApplicationStats } from "@/app/api/applications/stats/route";
 
 interface DashboardClientProps {
@@ -22,116 +25,465 @@ export default function DashboardClient({
   stats,
 }: DashboardClientProps) {
   const router = useRouter();
+  const { data: session } = useSession();
+  const { showToast } = useToast();
+
+  const [view, setView] = useState<"dashboard" | "all">("dashboard");
   const [selectedStatus, setSelectedStatus] = useState<
     ApplicationStatus | undefined
   >(undefined);
+  const [slideOverOpen, setSlideOverOpen] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  // Refresh server component data by triggering a re-render on the server
   function handleRefresh() {
     router.refresh();
   }
 
-  // Filter applications client-side based on selected status
+  function handleCreated() {
+    setSlideOverOpen(false);
+    handleRefresh();
+  }
+
   const filteredApplications =
     selectedStatus === undefined
       ? applications
       : applications.filter((app) => app.status === selectedStatus);
 
+  const userName =
+    session?.user?.name ?? session?.user?.email ?? "User";
+  const userImage = session?.user?.image ?? null;
+  const userInitial = userName.charAt(0).toUpperCase();
+
   return (
-    <div
-      style={{
-        display: "flex",
-        flexDirection: "column",
-        gap: "2rem",
-        padding: "2rem",
-        maxWidth: "1200px",
-        margin: "0 auto",
-      }}
-    >
-      {/* Header */}
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-        }}
-      >
-        <h1 style={{ margin: 0, fontSize: "1.75rem", fontWeight: 700 }}>
-          Job Application Tracker
-        </h1>
-      </div>
-
-      {/* Stats Cards */}
-      <section aria-labelledby="stats-heading">
-        <h2
-          id="stats-heading"
+    <div className="layout-root">
+      {/* ── Sidebar (desktop only) ── */}
+      <aside className="layout-sidebar" aria-label="Main navigation">
+        {/* Wordmark */}
+        <div
           style={{
-            margin: "0 0 1rem 0",
-            fontSize: "1.125rem",
-            fontWeight: 600,
-            color: "#374151",
+            padding: "24px 20px 20px",
+            borderBottom: "1px solid #E5E7EB",
+            flexShrink: 0,
           }}
         >
-          Overview
-        </h2>
-        <StatsCards stats={stats} />
-      </section>
+          <span
+            style={{
+              fontSize: "20px",
+              fontWeight: 700,
+              color: "#111827",
+              letterSpacing: "-0.3px",
+            }}
+          >
+            Trackerr
+            <span style={{ color: "#3B82F6" }}>.</span>
+          </span>
+        </div>
 
-      {/* Status Filter */}
-      <section aria-labelledby="filter-heading">
-        <h2
-          id="filter-heading"
+        {/* Nav links */}
+        <nav
+          style={{ flex: 1, padding: "16px 12px" }}
+          aria-label="Primary navigation"
+        >
+          <button
+            className={`nav-item${view === "dashboard" ? " active" : ""}`}
+            aria-current={view === "dashboard" ? "page" : undefined}
+            onClick={() => { setView("dashboard"); setSelectedStatus(undefined); }}
+          >
+            <span aria-hidden="true" style={{ fontSize: "16px" }}>
+              📊
+            </span>
+            Dashboard
+          </button>
+          <button
+            className={`nav-item${view === "all" ? " active" : ""}`}
+            aria-current={view === "all" ? "page" : undefined}
+            onClick={() => { setView("all"); setSelectedStatus(undefined); }}
+            style={{ marginTop: "4px" }}
+          >
+            <span aria-hidden="true" style={{ fontSize: "16px" }}>
+              📋
+            </span>
+            All Applications
+          </button>
+        </nav>
+
+        {/* User section */}
+        <div
           style={{
-            margin: "0 0 0.75rem 0",
-            fontSize: "1.125rem",
-            fontWeight: 600,
-            color: "#374151",
+            padding: "16px 12px",
+            borderTop: "1px solid #E5E7EB",
+            flexShrink: 0,
           }}
         >
-          Filter by Status
-        </h2>
-        <StatusFilter
-          stats={stats}
-          selectedStatus={selectedStatus}
-          onFilter={(status) => setSelectedStatus(status)}
-        />
-      </section>
-
-      {/* Add Application Form */}
-      <section aria-labelledby="form-heading">
-        <ApplicationForm onCreated={handleRefresh} />
-      </section>
-
-      {/* Application List */}
-      <section aria-labelledby="list-heading">
-        <h2
-          id="list-heading"
-          style={{
-            margin: "0 0 1rem 0",
-            fontSize: "1.125rem",
-            fontWeight: 600,
-            color: "#374151",
-          }}
-        >
-          Applications
-          {selectedStatus && (
+          {/* Avatar + name row */}
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "10px",
+              padding: "8px 4px",
+              marginBottom: "8px",
+            }}
+          >
+            {userImage ? (
+              /* eslint-disable-next-line @next/next/no-img-element */
+              <img
+                src={userImage}
+                alt={userName}
+                width={32}
+                height={32}
+                style={{ borderRadius: "50%", flexShrink: 0 }}
+              />
+            ) : (
+              <div
+                aria-hidden="true"
+                style={{
+                  width: 32,
+                  height: 32,
+                  borderRadius: "50%",
+                  background: "#3B82F6",
+                  color: "#fff",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  fontSize: "13px",
+                  fontWeight: 700,
+                  flexShrink: 0,
+                }}
+              >
+                {userInitial}
+              </div>
+            )}
             <span
               style={{
-                marginLeft: "0.5rem",
-                fontSize: "0.875rem",
-                fontWeight: 400,
-                color: "#6b7280",
+                fontSize: "13px",
+                fontWeight: 500,
+                color: "#374151",
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                whiteSpace: "nowrap",
               }}
             >
-              — filtered by {selectedStatus} ({filteredApplications.length})
+              {userName}
             </span>
+          </div>
+
+          {/* Sign out button */}
+          <button
+            className="nav-item"
+            onClick={() => signOut({ callbackUrl: "/" })}
+            style={{ color: "#6B7280" }}
+          >
+            <span aria-hidden="true" style={{ fontSize: "16px" }}>
+              🚪
+            </span>
+            Sign out
+          </button>
+        </div>
+      </aside>
+
+      {/* ── Main content area ── */}
+      <div className="layout-main">
+        {/* Mobile top header */}
+        <header
+          style={{
+            display: "none",
+            alignItems: "center",
+            justifyContent: "space-between",
+            padding: "12px 16px",
+            background: "#FFFFFF",
+            borderBottom: "1px solid #E5E7EB",
+            position: "sticky",
+            top: 0,
+            zIndex: 40,
+          }}
+          className="mobile-header"
+          aria-label="Mobile header"
+        >
+          <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+            <button
+              aria-label="Open menu"
+              onClick={() => setMobileMenuOpen((v) => !v)}
+              style={{
+                background: "none",
+                border: "none",
+                cursor: "pointer",
+                padding: "4px",
+                fontSize: "20px",
+                lineHeight: 1,
+                color: "#374151",
+                minWidth: "44px",
+                minHeight: "44px",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              ☰
+            </button>
+            <span
+              style={{
+                fontSize: "18px",
+                fontWeight: 700,
+                color: "#111827",
+                letterSpacing: "-0.3px",
+              }}
+            >
+              Trackerr<span style={{ color: "#3B82F6" }}>.</span>
+            </span>
+          </div>
+          <button
+            onClick={() => setSlideOverOpen(true)}
+            aria-label="Add new application"
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "6px",
+              height: "36px",
+              padding: "0 14px",
+              background: "#3B82F6",
+              color: "#FFFFFF",
+              border: "none",
+              borderRadius: "8px",
+              fontSize: "13px",
+              fontWeight: 600,
+              cursor: "pointer",
+            }}
+          >
+            + Add
+          </button>
+        </header>
+
+        {/* Mobile overlay menu */}
+        {mobileMenuOpen && (
+          <>
+            <div
+              onClick={() => setMobileMenuOpen(false)}
+              aria-hidden="true"
+              style={{
+                position: "fixed",
+                inset: 0,
+                background: "rgba(0,0,0,0.4)",
+                zIndex: 45,
+              }}
+            />
+            <div
+              style={{
+                position: "fixed",
+                top: 0,
+                left: 0,
+                bottom: 0,
+                width: "240px",
+                background: "#FFFFFF",
+                zIndex: 46,
+                display: "flex",
+                flexDirection: "column",
+                boxShadow: "0 20px 60px rgba(0,0,0,0.15)",
+              }}
+            >
+              <div
+                style={{
+                  padding: "24px 20px 20px",
+                  borderBottom: "1px solid #E5E7EB",
+                }}
+              >
+                <span
+                  style={{
+                    fontSize: "20px",
+                    fontWeight: 700,
+                    color: "#111827",
+                    letterSpacing: "-0.3px",
+                  }}
+                >
+                  Trackerr<span style={{ color: "#3B82F6" }}>.</span>
+                </span>
+              </div>
+              <nav style={{ flex: 1, padding: "16px 12px" }}>
+                <button
+                  className={`nav-item${view === "dashboard" ? " active" : ""}`}
+                  onClick={() => { setView("dashboard"); setSelectedStatus(undefined); setMobileMenuOpen(false); }}
+                >
+                  <span aria-hidden="true">📊</span> Dashboard
+                </button>
+                <button
+                  className={`nav-item${view === "all" ? " active" : ""}`}
+                  style={{ marginTop: "4px" }}
+                  onClick={() => { setView("all"); setSelectedStatus(undefined); setMobileMenuOpen(false); }}
+                >
+                  <span aria-hidden="true">📋</span> All Applications
+                </button>
+              </nav>
+              <div
+                style={{
+                  padding: "16px 12px",
+                  borderTop: "1px solid #E5E7EB",
+                }}
+              >
+                <button
+                  className="nav-item"
+                  onClick={() => signOut({ callbackUrl: "/" })}
+                  style={{ color: "#6B7280" }}
+                >
+                  <span aria-hidden="true">🚪</span> Sign out
+                </button>
+              </div>
+            </div>
+          </>
+        )}
+
+        {/* Page body */}
+        <main
+          style={{
+            flex: 1,
+            padding: "32px 32px 48px",
+            maxWidth: "1200px",
+            width: "100%",
+          }}
+        >
+          {/* Desktop page header */}
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              marginBottom: "28px",
+            }}
+          >
+            <h1
+              style={{
+                margin: 0,
+                fontSize: "24px",
+                fontWeight: 700,
+                color: "#111827",
+                letterSpacing: "-0.3px",
+              }}
+            >
+              {view === "dashboard" ? "Dashboard" : "All Applications"}
+            </h1>
+            {/* Desktop "+ Add Application" button */}
+            <button
+              onClick={() => setSlideOverOpen(true)}
+              className="desktop-add-btn"
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "6px",
+                height: "40px",
+                padding: "0 18px",
+                background: "#3B82F6",
+                color: "#FFFFFF",
+                border: "none",
+                borderRadius: "8px",
+                fontSize: "14px",
+                fontWeight: 600,
+                cursor: "pointer",
+                transition: "background 150ms ease",
+              }}
+              onMouseEnter={(e) => {
+                (e.currentTarget as HTMLButtonElement).style.background =
+                  "#2563EB";
+              }}
+              onMouseLeave={(e) => {
+                (e.currentTarget as HTMLButtonElement).style.background =
+                  "#3B82F6";
+              }}
+            >
+              + Add Application
+            </button>
+          </div>
+
+          {/* Stats Cards — only on Dashboard view */}
+          {view === "dashboard" && (
+          <section aria-labelledby="stats-heading" style={{ marginBottom: "28px" }}>
+            <h2
+              id="stats-heading"
+              style={{
+                margin: "0 0 14px",
+                fontSize: "13px",
+                fontWeight: 600,
+                color: "#6B7280",
+                textTransform: "uppercase",
+                letterSpacing: "0.06em",
+              }}
+            >
+              Overview
+            </h2>
+            <StatsCards stats={stats} />
+          </section>
           )}
-        </h2>
-        <ApplicationList
-          applications={filteredApplications}
-          onRefresh={handleRefresh}
+
+          {/* Filter pills + table section */}
+          <section aria-labelledby="apps-heading">
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                marginBottom: "14px",
+                flexWrap: "wrap",
+                gap: "12px",
+              }}
+            >
+              <h2
+                id="apps-heading"
+                style={{
+                  margin: 0,
+                  fontSize: "13px",
+                  fontWeight: 600,
+                  color: "#6B7280",
+                  textTransform: "uppercase",
+                  letterSpacing: "0.06em",
+                }}
+              >
+                {view === "all" ? `All Applications (${filteredApplications.length})` : "Applications"}
+                {view === "dashboard" && selectedStatus && (
+                  <span
+                    style={{
+                      marginLeft: "8px",
+                      fontWeight: 400,
+                      textTransform: "none",
+                      letterSpacing: 0,
+                      color: "#9CA3AF",
+                    }}
+                  >
+                    — {selectedStatus} ({filteredApplications.length})
+                  </span>
+                )}
+              </h2>
+            </div>
+
+            {/* Filter pills — only on Dashboard view */}
+            {view === "dashboard" && (
+            <div style={{ marginBottom: "20px" }}>
+              <StatusFilter
+                stats={stats}
+                selectedStatus={selectedStatus}
+                onFilter={(status) => setSelectedStatus(status)}
+              />
+            </div>
+            )}
+
+            {/* Application table */}
+            <ApplicationList
+              applications={filteredApplications}
+              onRefresh={handleRefresh}
+            />
+          </section>
+        </main>
+      </div>
+
+      {/* ── Slide-over panel ── */}
+      <SlideOver
+        isOpen={slideOverOpen}
+        onClose={() => setSlideOverOpen(false)}
+        title="← Add Application"
+      >
+        <ApplicationForm
+          onCancel={() => setSlideOverOpen(false)}
+          onCreated={handleCreated}
+          showToast={showToast}
         />
-      </section>
+      </SlideOver>
     </div>
   );
 }

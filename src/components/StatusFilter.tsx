@@ -28,11 +28,18 @@ const STATUSES: ApplicationStatus[] = [
   "Rejected",
 ];
 
-const STATUS_COLORS: Record<ApplicationStatus, string> = {
-  Applied: "#3b82f6",    // blue
-  Interview: "#f59e0b",  // amber
-  Offer: "#10b981",      // green
-  Rejected: "#ef4444",   // red
+interface StatusConfig {
+  bg: string;
+  text: string;
+  dot: string;
+  activeBg: string;
+}
+
+const STATUS_CONFIG: Record<ApplicationStatus, StatusConfig> = {
+  Applied:   { bg: "#DBEAFE", text: "#1D4ED8", dot: "#3B82F6",  activeBg: "#3B82F6"  },
+  Interview: { bg: "#FEF3C7", text: "#B45309", dot: "#F59E0B",  activeBg: "#F59E0B"  },
+  Offer:     { bg: "#D1FAE5", text: "#065F46", dot: "#10B981",  activeBg: "#10B981"  },
+  Rejected:  { bg: "#FEE2E2", text: "#991B1B", dot: "#EF4444",  activeBg: "#EF4444"  },
 };
 
 export default function StatusFilter({
@@ -40,98 +47,119 @@ export default function StatusFilter({
   selectedStatus,
   onFilter,
 }: StatusFilterProps) {
-  const handleClick = (status: ApplicationStatus | undefined) => {
-    onFilter(status);
-  };
-
   const isAllSelected = selectedStatus === undefined;
+
+  const pillBase: React.CSSProperties = {
+    display: "inline-flex",
+    alignItems: "center",
+    gap: "6px",
+    padding: "6px 14px",
+    borderRadius: "999px",
+    fontSize: "13px",
+    fontWeight: 500,
+    cursor: "pointer",
+    border: "1px solid",
+    transition: "all 150ms ease",
+    whiteSpace: "nowrap",
+    minHeight: "36px",
+  };
 
   return (
     <div
       style={{
         display: "flex",
-        flexWrap: "wrap",
+        flexWrap: "nowrap",
         gap: "8px",
         alignItems: "center",
+        overflowX: "auto",
+        paddingBottom: "4px",
       }}
       role="group"
       aria-label="Filter applications by status"
     >
-      {/* "All" button */}
+      {/* "All" pill */}
       <button
-        onClick={() => handleClick(undefined)}
+        onClick={() => onFilter(undefined)}
         aria-pressed={isAllSelected}
         style={{
-          padding: "6px 14px",
-          borderRadius: "9999px",
-          border: "2px solid",
-          borderColor: isAllSelected ? "#6366f1" : "#d1d5db",
-          backgroundColor: isAllSelected ? "#6366f1" : "transparent",
-          color: isAllSelected ? "#ffffff" : "#374151",
-          fontWeight: isAllSelected ? 600 : 400,
-          cursor: "pointer",
-          fontSize: "14px",
-          transition: "all 0.15s ease",
+          ...pillBase,
+          background: isAllSelected ? "#6366F1" : "#FFFFFF",
+          borderColor: isAllSelected ? "#6366F1" : "#E5E7EB",
+          color: isAllSelected ? "#FFFFFF" : "#374151",
+          fontWeight: isAllSelected ? 600 : 500,
         }}
       >
-        All{" "}
         <span
           style={{
-            display: "inline-block",
+            width: "6px",
+            height: "6px",
+            borderRadius: "50%",
+            background: isAllSelected ? "#FFFFFF" : "#9CA3AF",
+            flexShrink: 0,
+          }}
+        />
+        All
+        <span
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            justifyContent: "center",
             minWidth: "20px",
-            textAlign: "center",
-            backgroundColor: isAllSelected ? "rgba(255,255,255,0.25)" : "#e5e7eb",
-            color: isAllSelected ? "#ffffff" : "#374151",
-            borderRadius: "9999px",
-            padding: "0 6px",
-            fontSize: "12px",
+            height: "20px",
+            borderRadius: "999px",
+            background: isAllSelected ? "rgba(255,255,255,0.25)" : "#F3F4F6",
+            color: isAllSelected ? "#FFFFFF" : "#6B7280",
+            fontSize: "11px",
             fontWeight: 600,
-            marginLeft: "4px",
+            padding: "0 5px",
           }}
         >
           {stats.total}
         </span>
       </button>
 
-      {/* Per-status buttons */}
+      {/* Per-status pills */}
       {STATUSES.map((status) => {
         const isSelected = selectedStatus === status;
+        const cfg = STATUS_CONFIG[status];
         const count = stats.byStatus[status];
-        const color = STATUS_COLORS[status];
 
         return (
           <button
             key={status}
-            onClick={() => handleClick(status)}
+            onClick={() => onFilter(status)}
             aria-pressed={isSelected}
             style={{
-              padding: "6px 14px",
-              borderRadius: "9999px",
-              border: "2px solid",
-              borderColor: isSelected ? color : "#d1d5db",
-              backgroundColor: isSelected ? color : "transparent",
-              color: isSelected ? "#ffffff" : "#374151",
-              fontWeight: isSelected ? 600 : 400,
-              cursor: "pointer",
-              fontSize: "14px",
-              transition: "all 0.15s ease",
+              ...pillBase,
+              background: isSelected ? cfg.activeBg : "#FFFFFF",
+              borderColor: isSelected ? cfg.activeBg : "#E5E7EB",
+              color: isSelected ? "#FFFFFF" : "#374151",
+              fontWeight: isSelected ? 600 : 500,
             }}
           >
-            {status}{" "}
             <span
               style={{
-                display: "inline-block",
+                width: "6px",
+                height: "6px",
+                borderRadius: "50%",
+                background: isSelected ? "#FFFFFF" : cfg.dot,
+                flexShrink: 0,
+              }}
+            />
+            {status}
+            <span
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
                 minWidth: "20px",
-                textAlign: "center",
-                backgroundColor: isSelected
-                  ? "rgba(255,255,255,0.25)"
-                  : "#e5e7eb",
-                color: isSelected ? "#ffffff" : "#374151",
-                borderRadius: "9999px",
-                padding: "0 6px",
-                fontSize: "12px",
+                height: "20px",
+                borderRadius: "999px",
+                background: isSelected ? "rgba(255,255,255,0.25)" : "#F3F4F6",
+                color: isSelected ? "#FFFFFF" : "#6B7280",
+                fontSize: "11px",
                 fontWeight: 600,
-                marginLeft: "4px",
+                padding: "0 5px",
               }}
             >
               {count}
