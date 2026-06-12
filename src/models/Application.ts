@@ -1,0 +1,41 @@
+import mongoose, { Schema, model, models, Document } from 'mongoose';
+
+export interface IApplication extends Document {
+  _id: string;
+  userId: string;
+  company: string;
+  role: string;
+  status: 'Applied' | 'Interview' | 'Offer' | 'Rejected';
+  appliedDate?: Date;
+  jobUrl?: string;
+  notes?: string;
+  lastUpdated: Date;
+  lastReminderSent?: Date;
+  createdAt: Date;
+}
+
+const ApplicationSchema = new Schema<IApplication>(
+  {
+    userId: { type: String, required: true, index: true },
+    company: { type: String, required: true },
+    role: { type: String, required: true },
+    status: {
+      type: String,
+      enum: ['Applied', 'Interview', 'Offer', 'Rejected'],
+      default: 'Applied',
+      required: true,
+    },
+    appliedDate: { type: Date },
+    jobUrl: { type: String },
+    notes: { type: String },
+    lastUpdated: { type: Date, default: Date.now },
+    lastReminderSent: { type: Date },
+  },
+  { timestamps: { createdAt: 'createdAt', updatedAt: false } }
+);
+
+// Compound index for filtered list queries and stats aggregation
+ApplicationSchema.index({ userId: 1, status: 1 });
+
+export const Application =
+  models.Application || model<IApplication>('Application', ApplicationSchema);

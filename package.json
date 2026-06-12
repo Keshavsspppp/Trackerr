@@ -1,0 +1,32 @@
+{
+  "name": "jobtracker",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage"
+  },
+  "dependencies": {
+    "@next-auth/mongodb-adapter": "^1.1.3",
+    "mongoose": "^9.7.0",
+    "next": "16.2.9",
+    "next-auth": "^4.24.14",
+    "react": "19.2.4",
+    "react-dom": "19.2.4",
+    "resend": "^6.12.4"
+  },
+  "devDependencies": {
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "@vitejs/plugin-react": "^6.0.2",
+    "@vitest/coverage-v8": "^4.1.8",
+    "fast-check": "^4.8.0",
+    "typescript": "^5",
+    "vitest": "^4.1.8"
+  }
+}
