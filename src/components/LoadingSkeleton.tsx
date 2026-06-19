@@ -16,9 +16,9 @@ export default function LoadingSkeleton({ variant }: LoadingSkeletonProps) {
               gap: '16px',
               alignItems: 'center',
               padding: '14px 16px',
-              backgroundColor: '#FFFFFF',
+              backgroundColor: 'var(--color-surface)',
               borderRadius: '8px',
-              border: '1px solid #E5E7EB',
+              border: '1px solid var(--color-border)',
             }}
           >
             <div className="skeleton-bar" style={{ width: '20%', height: '16px' }} />
@@ -34,28 +34,36 @@ export default function LoadingSkeleton({ variant }: LoadingSkeletonProps) {
   }
 
   if (variant === 'kanban') {
+    const columnStyles = [
+      { bg: 'var(--color-applied-bg)' },
+      { bg: 'var(--color-interview-bg)' },
+      { bg: 'var(--color-offer-bg)' },
+      { bg: 'var(--color-rejected-bg)' },
+    ];
     return (
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px' }}>
-        {[...Array(4)].map((_, colIndex) => (
+        {columnStyles.map((col, colIndex) => (
           <div
             key={colIndex}
             style={{
-              backgroundColor: '#F9FAFB',
+              backgroundColor: col.bg,
               borderRadius: '12px',
               padding: '16px',
-              minHeight: '400px',
+              minHeight: '500px',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '12px',
             }}
           >
-            <div className="skeleton-bar" style={{ width: '60%', height: '20px', marginBottom: '16px' }} />
+            <div className="skeleton-bar" style={{ width: '60%', height: '20px', marginBottom: '8px' }} />
             {[...Array(3)].map((_, cardIndex) => (
               <div
                 key={cardIndex}
                 style={{
-                  backgroundColor: '#FFFFFF',
+                  backgroundColor: 'var(--color-surface)',
                   borderRadius: '8px',
                   padding: '12px',
-                  marginBottom: '12px',
-                  border: '1px solid #E5E7EB',
+                  border: '1px solid var(--color-border)',
                 }}
               >
                 <div className="skeleton-bar" style={{ width: '80%', height: '16px', marginBottom: '8px' }} />
@@ -81,10 +89,10 @@ export default function LoadingSkeleton({ variant }: LoadingSkeletonProps) {
           <div
             key={i}
             style={{
-              backgroundColor: '#FFFFFF',
+              backgroundColor: 'var(--color-surface)',
               borderRadius: '12px',
               padding: '20px 24px',
-              border: '1px solid #E5E7EB',
+              border: '1px solid var(--color-border)',
             }}
           >
             <div className="skeleton-bar" style={{ width: '60%', height: '12px', marginBottom: '12px' }} />
@@ -100,10 +108,10 @@ export default function LoadingSkeleton({ variant }: LoadingSkeletonProps) {
     return (
       <div
         style={{
-          backgroundColor: '#FFFFFF',
+          backgroundColor: 'var(--color-surface)',
           borderRadius: '12px',
           padding: '24px',
-          border: '1px solid #E5E7EB',
+          border: '1px solid var(--color-border)',
           minHeight: '300px',
         }}
       >
@@ -119,3 +127,4 @@ export default function LoadingSkeleton({ variant }: LoadingSkeletonProps) {
 
   return null;
 }
+

@@ -52,4 +52,7 @@ export const updateApplicationSchema = z.object({
     message: 'capturedAt must be a valid date string',
   }).optional(),
   originalUrl: z.string().optional(),
+  snoozedUntil: z.string().refine((val) => !val || !isNaN(Date.parse(val)), {
+    message: 'snoozedUntil must be a valid date string',
+  }).optional().nullable(),
 });

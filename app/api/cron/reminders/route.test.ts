@@ -36,6 +36,14 @@ vi.mock('@/src/models/Application', () => ({
   },
 }));
 
+vi.mock('@/src/models/UserSettings', () => ({
+  UserSettings: {
+    find: vi.fn().mockReturnValue({
+      lean: vi.fn().mockResolvedValue([]),
+    }),
+  },
+}));
+
 // Mock mongoose connection for users lookup
 // Mock mongoose: we only need connection.db.collection for the user lookup
 // and Types.ObjectId for ObjectId creation in the route.
@@ -99,7 +107,7 @@ function buildFakeApp(overrides: {
     company: overrides.company ?? 'Acme Corp',
     role: overrides.role ?? 'Software Engineer',
     status: overrides.status ?? 'Applied',
-    lastUpdated: overrides.lastUpdated ?? new Date(Date.now() - 10 * 24 * 60 * 60 * 1000),
+    lastUpdated: overrides.lastUpdated ?? new Date(Date.now() - 15 * 24 * 60 * 60 * 1000),
     lastReminderSent: overrides.lastReminderSent ?? null,
   };
 }
@@ -129,7 +137,7 @@ describe('Property 9: Cron selects exactly the stale applications', () => {
 
     for (const status of nonAppliedStatuses) {
       expect(
-        isStaleApplication({ status, lastUpdated: oldDate, lastReminderSent: null }, now)
+        isStaleApplication({ status, lastUpdated: oldDate, lastReminderSent: null }, now, THRESHOLD_DAYS)
       ).toBe(false);
     }
   });
@@ -139,7 +147,7 @@ describe('Property 9: Cron selects exactly the stale applications', () => {
     // lastUpdated is only 3 days ago — not stale
     const recentDate = new Date(now.getTime() - 3 * MS_PER_DAY);
     expect(
-      isStaleApplication({ status: 'Applied', lastUpdated: recentDate, lastReminderSent: null }, now)
+      isStaleApplication({ status: 'Applied', lastUpdated: recentDate, lastReminderSent: null }, now, THRESHOLD_DAYS)
     ).toBe(false);
   });
 
@@ -147,7 +155,7 @@ describe('Property 9: Cron selects exactly the stale applications', () => {
     const now = new Date();
     const oldDate = new Date(now.getTime() - 10 * MS_PER_DAY);
     expect(
-      isStaleApplication({ status: 'Applied', lastUpdated: oldDate, lastReminderSent: null }, now)
+      isStaleApplication({ status: 'Applied', lastUpdated: oldDate, lastReminderSent: null }, now, THRESHOLD_DAYS)
     ).toBe(true);
   });
 
@@ -155,7 +163,7 @@ describe('Property 9: Cron selects exactly the stale applications', () => {
     const now = new Date();
     const oldDate = new Date(now.getTime() - 10 * MS_PER_DAY);
     expect(
-      isStaleApplication({ status: 'Applied', lastUpdated: oldDate }, now)
+      isStaleApplication({ status: 'Applied', lastUpdated: oldDate }, now, THRESHOLD_DAYS)
     ).toBe(true);
   });
 
@@ -166,7 +174,8 @@ describe('Property 9: Cron selects exactly the stale applications', () => {
     expect(
       isStaleApplication(
         { status: 'Applied', lastUpdated: oldLastUpdated, lastReminderSent: recentReminderSent },
-        now
+        now,
+        THRESHOLD_DAYS
       )
     ).toBe(false);
   });
@@ -178,7 +187,8 @@ describe('Property 9: Cron selects exactly the stale applications', () => {
     expect(
       isStaleApplication(
         { status: 'Applied', lastUpdated: oldDate, lastReminderSent: olderReminderSent },
-        now
+        now,
+        THRESHOLD_DAYS
       )
     ).toBe(true);
   });

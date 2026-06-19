@@ -2,19 +2,31 @@
  * Utility functions for application staleness tracking
  */
 
-const STALE_THRESHOLD_DAYS = 7;
+const STALE_THRESHOLD_DAYS = 14;
 
 /**
- * Determines if an application is considered stale (no update for 7+ days)
+ * Determines if an application is considered stale (no update for thresholdDays)
  * 
  * @param lastUpdated The lastUpdated date of the application
- * @returns true if the application hasn't been updated in 7+ days
+ * @param thresholdDays Number of days after which an application is stale
+ * @param snoozedUntil Optional date until which the application is snoozed
+ * @returns true if the application hasn't been updated in thresholdDays and is not snoozed
  */
-export function isApplicationStale(lastUpdated: string | Date): boolean {
-  const lastUpdateTime = new Date(lastUpdated).getTime();
+export function isApplicationStale(
+  lastUpdated: string | Date,
+  thresholdDays: number = 14,
+  snoozedUntil?: string | Date | null
+): boolean {
   const now = Date.now();
+  if (snoozedUntil) {
+    const snoozeTime = new Date(snoozedUntil).getTime();
+    if (!isNaN(snoozeTime) && snoozeTime > now) {
+      return false;
+    }
+  }
+  const lastUpdateTime = new Date(lastUpdated).getTime();
   const daysSinceUpdate = (now - lastUpdateTime) / (1000 * 60 * 60 * 24);
-  return daysSinceUpdate >= STALE_THRESHOLD_DAYS;
+  return daysSinceUpdate >= thresholdDays;
 }
 
 /**
@@ -65,11 +77,20 @@ export function isStaleApplication(
     status: string;
     lastUpdated: Date;
     lastReminderSent?: Date | null;
+    snoozedUntil?: Date | null;
   },
   now: Date,
-  thresholdDays: number = 7
+  thresholdDays: number = 14
 ): boolean {
   if (app.status !== 'Applied') return false;
+
+  // Exclude if currently snoozed
+  if (app.snoozedUntil) {
+    const snoozeTime = new Date(app.snoozedUntil).getTime();
+    if (!isNaN(snoozeTime) && snoozeTime > now.getTime()) {
+      return false;
+    }
+  }
 
   // Guard against invalid dates — NaN comparisons always return false,
   // which would cause incorrect stale detection.

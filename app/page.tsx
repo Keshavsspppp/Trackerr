@@ -83,7 +83,7 @@ export default function Home() {
         {[
           { company: 'Google', role: 'SWE Intern', status: 'Interview', bg: 'var(--color-interview-bg, #FEF3C7)', text: 'var(--color-interview-text, #B45309)', dot: 'var(--color-interview-dot, #F59E0B)' },
           { company: 'Stripe', role: 'Backend Intern', status: 'Offer', bg: 'var(--color-offer-bg, #D1FAE5)', text: 'var(--color-offer-text, #065F46)', dot: 'var(--color-offer-dot, #10B981)' },
-          { company: 'Meta', role: 'Product Intern', status: 'Applied', bg: 'var(--color-applied-bg, #DBEAFE)', text: 'var(--color-applied-text, #1D4ED8)', dot: 'var(--color-applied-dot, #3B82F6)' },
+          { company: 'Meta', role: 'Product Intern', status: 'Applied', bg: 'var(--color-applied-bg, #E2E8F0)', text: 'var(--color-applied-text, #334155)', dot: 'var(--color-applied-dot, #64748B)' },
         ].map((item) => (
           <div
             key={item.company}
@@ -146,7 +146,7 @@ export default function Home() {
           fontWeight: 600,
           cursor: 'pointer',
           transition: 'background 150ms ease',
-          marginBottom: '12px',
+          marginBottom: '8px',
           boxShadow: '0 4px 6px -1px rgba(59, 130, 246, 0.2)',
         }}
         onMouseEnter={(e) => {
@@ -197,6 +197,11 @@ export default function Home() {
         Continue with Google
       </button>
 
+      {/* OAuth Security Microcopy */}
+      <p style={{ fontSize: '11px', color: '#6B7280', marginTop: '0px', marginBottom: '12px', textAlign: 'center', maxWidth: '340px' }}>
+        We only use Google sign-in for secure login — we never read your email.
+      </p>
+
       {/* Try Demo Sandbox button */}
       <button
         onClick={() => window.location.href = '/demo'}
@@ -239,6 +244,7 @@ export default function Home() {
           color: '#6B7280',
           justifyContent: 'center',
           flexWrap: 'wrap',
+          marginBottom: '8px',
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
@@ -254,6 +260,21 @@ export default function Home() {
           <span>Your Data</span>
         </div>
       </div>
+
+      {/* Footer Links */}
+      <footer
+        style={{
+          marginTop: '24px',
+          display: 'flex',
+          gap: '16px',
+          fontSize: '12px',
+          color: '#9CA3AF',
+        }}
+      >
+        <a href="/privacy" style={{ color: '#9CA3AF', textDecoration: 'underline' }}>Privacy Policy</a>
+        <span>·</span>
+        <a href="/terms" style={{ color: '#9CA3AF', textDecoration: 'underline' }}>Terms of Service</a>
+      </footer>
     </main>
   );
 }

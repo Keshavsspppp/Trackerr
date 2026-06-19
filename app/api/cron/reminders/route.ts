@@ -12,6 +12,7 @@ import { connectDB } from '@/src/lib/mongodb';
 import { Application } from '@/src/models/Application';
 import { logError } from '@/src/lib/logger';
 import { isStaleApplication } from '@/src/lib/applicationUtils';
+import { UserSettings } from '@/src/models/UserSettings';
 
 /**
  * Timing-safe string comparison — prevents timing attacks on the CRON_SECRET.
@@ -55,23 +56,38 @@ export async function GET(req: NextRequest) {
     await connectDB();
 
     const now = new Date();
-    const cutoff = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
 
-    // Query stale applications
-    const staleApps = await Application.find({
-      status: 'Applied',
-      lastUpdated: { $lt: cutoff },
-      $or: [
-        { lastReminderSent: null },
-        { lastReminderSent: { $exists: false } },
-        { lastReminderSent: { $lt: cutoff } },
-      ],
+    // Fetch user settings to get custom thresholds
+    const allSettings = await UserSettings.find({}).lean().catch(() => []);
+    const settingsMap = new Map<string, number>();
+    for (const s of allSettings) {
+      settingsMap.set(s.userId, s.staleThresholdDays);
+    }
+
+    // Query all Applied applications
+    const appliedApps = await Application.find({ status: 'Applied' });
+
+    // Filter stale applications based on custom/default threshold and snooze status
+    const staleApps = appliedApps.filter((app) => {
+      const thresholdDays = settingsMap.get(app.userId) ?? 14;
+      return isStaleApplication(
+        {
+          status: app.status,
+          lastUpdated: app.lastUpdated,
+          lastReminderSent: app.lastReminderSent,
+          snoozedUntil: app.snoozedUntil,
+        },
+        now,
+        thresholdDays
+      );
     });
 
     const resend = new Resend(process.env.RESEND_API_KEY);
 
     let sent = 0;
     let errors = 0;
+
+    const baseUrl = process.env.NEXTAUTH_URL ?? 'http://localhost:3000';
 
     for (const app of staleApps) {
       try {
@@ -84,11 +100,14 @@ export async function GET(req: NextRequest) {
           continue;
         }
 
+        const deepLink = `${baseUrl}/dashboard?appId=${app._id}`;
+
         await resend.emails.send({
           from: process.env.RESEND_FROM_EMAIL ?? 'noreply@jobtracker.app',
           to: app.userEmail,
           subject: 'Follow up on your application',
-          html: `<p>Don't forget to follow up on your application for <strong>${app.role}</strong> at <strong>${app.company}</strong>.</p>`,
+          html: `<p>Don't forget to follow up on your application for <strong>${app.role}</strong> at <strong>${app.company}</strong>.</p>
+<p><a href="${deepLink}" style="display: inline-block; padding: 10px 16px; background-color: #3b82f6; color: white; text-decoration: none; border-radius: 6px; font-weight: bold;">Follow Up on Trackerr</a></p>`,
         });
 
         // Update lastReminderSent only on success

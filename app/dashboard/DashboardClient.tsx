@@ -15,7 +15,9 @@ import {
   ChevronRight,
   Sun,
   Moon,
-  Monitor
+  Monitor,
+  Settings,
+  AlertTriangle
 } from "lucide-react";
 import StatsCards from "@/src/components/StatsCards";
 import StatusFilter from "@/src/components/StatusFilter";
@@ -56,7 +58,7 @@ export default function DashboardClient({
   const { data: session } = useSession();
   const { showToast } = useToast();
 
-  const [view, setView] = useState<"dashboard" | "all">("dashboard");
+  const [view, setView] = useState<"dashboard" | "all" | "settings">("dashboard");
   const [viewMode, setViewMode] = useState<'table' | 'kanban'>('table');
   const [selectedStatus, setSelectedStatus] = useState<
     ApplicationStatus | undefined
@@ -73,6 +75,14 @@ export default function DashboardClient({
   const [isFormDirty, setIsFormDirty] = useState(false);
   const [pendingDeleteIds, setPendingDeleteIds] = useState<string[]>([]);
   const deleteTimeouts = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
+  const [staleThresholdDays, setStaleThresholdDays] = useState<number>(14);
+
+  const baseApps = isDemo ? demoApps : applications;
+  const visibleApps = baseApps.filter((app) => !pendingDeleteIds.includes(app._id));
+  const filteredApplications =
+    selectedStatus === undefined
+      ? visibleApps
+      : visibleApps.filter((app) => app.status === selectedStatus);
 
   useEffect(() => {
     return () => {
@@ -97,6 +107,96 @@ export default function DashboardClient({
     const savedTheme = localStorage.getItem('trackerr_theme') as 'light' | 'dark' | 'system' || 'system';
     setTheme(savedTheme);
   }, []);
+
+  // Fetch stale threshold settings on mount
+  useEffect(() => {
+    if (!isDemo) {
+      fetch('/api/settings')
+        .then(res => res.json())
+        .then(data => {
+          if (data && typeof data.staleThresholdDays === 'number') {
+            setStaleThresholdDays(data.staleThresholdDays);
+          }
+        })
+        .catch(() => {});
+    } else {
+      const savedStale = localStorage.getItem('trackerr_stale_threshold');
+      if (savedStale) {
+        setStaleThresholdDays(parseInt(savedStale, 10));
+      }
+    }
+  }, [isDemo]);
+
+  async function saveSettings(threshold: number) {
+    setStaleThresholdDays(threshold);
+    if (isDemo) {
+      localStorage.setItem('trackerr_stale_threshold', String(threshold));
+      showToast('[Demo Sandbox] Saved settings locally ✓', 'success');
+      return;
+    }
+    try {
+      const res = await fetch('/api/settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ staleThresholdDays: threshold }),
+      });
+      if (res.ok) {
+        showToast('Settings updated ✓', 'success');
+      } else {
+        showToast('Failed to save settings', 'error');
+      }
+    } catch {
+      showToast('Network error — please try again', 'error');
+    }
+  }
+
+  async function handleSnooze(id: string) {
+    const snoozeDays = 7;
+    const snoozedUntil = new Date(Date.now() + snoozeDays * 24 * 60 * 60 * 1000).toISOString();
+    
+    if (isDemo) {
+      setDemoApps((prev) =>
+        prev.map((app) => (app._id === id ? { ...app, snoozedUntil: new Date(snoozedUntil) } : app))
+      );
+      showToast(`[Demo Sandbox] Snoozed reminders for 7 days ✓`, 'success');
+      return;
+    }
+
+    try {
+      const res = await fetch(`/api/applications/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ snoozedUntil }),
+      });
+      if (res.ok) {
+        showToast('Snoozed reminders for 7 days ✓', 'success');
+        handleRefresh();
+      } else {
+        showToast('Failed to snooze application', 'error');
+      }
+    } catch {
+      showToast('Network error — please try again', 'error');
+    }
+  }
+
+  // Deep link opening on mount/load
+  useEffect(() => {
+    if (typeof window !== 'undefined' && baseApps.length > 0) {
+      const params = new URLSearchParams(window.location.search);
+      const appId = params.get('appId');
+      if (appId) {
+        const found = baseApps.find((a) => a._id === appId);
+        if (found) {
+          // Clear query param so it doesn't reopen if they close it
+          const newUrl = window.location.pathname;
+          window.history.replaceState({}, '', newUrl);
+          
+          setEditingApplication(found);
+          setSlideOverOpen(true);
+        }
+      }
+    }
+  }, [baseApps]);
 
   useEffect(() => {
     if (theme === 'system') {
@@ -326,21 +426,26 @@ export default function DashboardClient({
     }
   }
 
+  const staleCount = useMemo(() => {
+    return visibleApps.filter((app) => {
+      if (app.status !== 'Applied') return false;
+      if (app.snoozedUntil) {
+        const snoozeTime = new Date(app.snoozedUntil).getTime();
+        if (!isNaN(snoozeTime) && snoozeTime > Date.now()) {
+          return false;
+        }
+      }
+      const diff = Date.now() - new Date(app.lastUpdated).getTime();
+      return diff > staleThresholdDays * 86400000;
+    }).length;
+  }, [visibleApps, staleThresholdDays]);
+
   function handleExportCSV() {
     exportApplicationsToCSV(applications);
     showToast('CSV exported successfully', 'success');
   }
 
   const userId = session?.user ? (session.user as { id?: string }).id || '' : '';
-
-  const baseApps = isDemo ? demoApps : applications;
-
-  const visibleApps = baseApps.filter((app) => !pendingDeleteIds.includes(app._id));
-
-  const filteredApplications =
-    selectedStatus === undefined
-      ? visibleApps
-      : visibleApps.filter((app) => app.status === selectedStatus);
 
   const userName =
     session?.user?.name ?? session?.user?.email ?? "User";
@@ -425,6 +530,15 @@ export default function DashboardClient({
           >
             <ClipboardList size={18} aria-hidden="true" />
             All Internships
+          </button>
+          <button
+            className={`nav-item${view === "settings" ? " active" : ""}`}
+            aria-current={view === "settings" ? "page" : undefined}
+            onClick={() => { setView("settings"); setSelectedStatus(undefined); }}
+            style={{ marginTop: "4px", display: "flex", alignItems: "center", gap: "8px", width: "100%" }}
+          >
+            <Settings size={18} aria-hidden="true" />
+            Settings
           </button>
         </nav>
 
@@ -665,6 +779,13 @@ export default function DashboardClient({
                 >
                   <ClipboardList size={18} aria-hidden="true" /> All Internships
                 </button>
+                <button
+                  className={`nav-item${view === "settings" ? " active" : ""}`}
+                  style={{ marginTop: "4px", display: "flex", alignItems: "center", gap: "8px", width: "100%" }}
+                  onClick={() => { setView("settings"); setSelectedStatus(undefined); setMobileMenuOpen(false); }}
+                >
+                  <Settings size={18} aria-hidden="true" /> Settings
+                </button>
               </nav>
               <div
                 style={{
@@ -742,7 +863,7 @@ export default function DashboardClient({
                 </button>
               )}
               <h1 className="dashboard-header-title">
-                {view === "dashboard" ? "Dashboard" : "All Internships"}
+                {view === "dashboard" ? "Dashboard" : view === "all" ? "All Internships" : "Settings"}
               </h1>
             </div>
             {/* Desktop "+ Add Internship" button */}
@@ -757,25 +878,215 @@ export default function DashboardClient({
             </button>
           </div>
 
-          {applications.length === 0 ? (
-            <div className="card-empty-state">
-              <GraduationCap size={64} style={{ color: "var(--color-accent)" }} />
-              <h3 className="card-empty-state-title">
+          {staleCount > 0 && view === "dashboard" && (
+            <div
+              style={{
+                marginBottom: "20px",
+                padding: "12px 16px",
+                backgroundColor: "var(--color-stale-bg)",
+                border: "1px solid var(--color-stale-border)",
+                borderRadius: "var(--radius-btn)",
+                color: "var(--color-stale-text)",
+                fontSize: "14px",
+                fontWeight: 500,
+                display: "flex",
+                alignItems: "center",
+                gap: "8px",
+              }}
+            >
+              <AlertTriangle size={18} style={{ color: "var(--color-stale-border)" }} />
+              <span>
+                You have <strong>{staleCount}</strong> application{staleCount > 1 ? "s" : ""} that haven't been updated in {staleThresholdDays} days. Consider following up!
+              </span>
+            </div>
+          )}
+
+          {view === "settings" ? (
+            <div
+              style={{
+                background: "var(--color-surface)",
+                border: "1px solid var(--color-border)",
+                borderRadius: "12px",
+                padding: "24px",
+                boxShadow: "var(--shadow-card)",
+                maxWidth: "600px",
+              }}
+            >
+              <h2 style={{ fontSize: "16px", fontWeight: 700, marginBottom: "8px", color: "var(--color-text-primary)" }}>
+                Reminders Settings
+              </h2>
+              <p style={{ margin: "0 0 20px", fontSize: "13px", color: "var(--color-text-secondary)" }}>
+                Configure when your job applications are flagged as stale.
+              </p>
+              <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+                <div>
+                  <label htmlFor="stale-threshold-input" style={{ display: "block", fontSize: "13px", fontWeight: 600, color: "var(--color-text-secondary)", marginBottom: "6px" }}>
+                    Stale Application Threshold (days)
+                  </label>
+                  <input
+                    id="stale-threshold-input"
+                    type="number"
+                    min="1"
+                    max="365"
+                    value={staleThresholdDays}
+                    onChange={(e) => {
+                      const val = parseInt(e.target.value, 10);
+                      if (!isNaN(val)) {
+                        setStaleThresholdDays(val);
+                      }
+                    }}
+                    style={{
+                      padding: "8px 12px",
+                      fontSize: "14px",
+                      border: "1px solid var(--color-border)",
+                      borderRadius: "var(--radius-input)",
+                      background: "var(--color-surface)",
+                      color: "var(--color-text-primary)",
+                      width: "120px",
+                    }}
+                  />
+                </div>
+                <div>
+                  <button
+                    onClick={() => saveSettings(staleThresholdDays)}
+                    className="btn-primary"
+                    style={{ height: "40px" }}
+                  >
+                    Save Settings
+                  </button>
+                </div>
+              </div>
+            </div>
+          ) : visibleApps.length === 0 ? (
+            <div className="card-empty-state" style={{ padding: "64px 32px", gap: "20px" }}>
+              <svg
+                width="240"
+                height="160"
+                viewBox="0 0 240 160"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+                style={{
+                  filter: "drop-shadow(0 8px 24px rgba(0, 0, 0, 0.04))",
+                }}
+              >
+                {/* Ambient Background Glow */}
+                <circle cx="120" cy="80" r="50" fill="url(#ambient-glow)" className="ambient-glow-circle" />
+
+                {/* Main Folder/Briefcase Shape */}
+                <g className="floating-illustration">
+                  {/* Folder Back */}
+                  <path
+                    d="M40 50C40 44.4772 44.4772 40 50 40H90L105 55H190C195.523 55 200 59.4772 200 65V120C200 125.523 195.523 130 190 130H50C44.4772 130 40 125.523 40 120V50Z"
+                    fill="url(#folder-bg)"
+                    stroke="url(#folder-border)"
+                    strokeWidth="2"
+                  />
+                  
+                  {/* Floating Document 1 */}
+                  <rect
+                    x="75"
+                    y="25"
+                    width="70"
+                    height="90"
+                    rx="8"
+                    fill="var(--color-surface)"
+                    stroke="var(--color-border)"
+                    strokeWidth="2"
+                    transform="rotate(-8 110 70)"
+                  />
+                  <line x1="88" y1="42" x2="128" y2="36" stroke="var(--color-border)" strokeWidth="2" strokeLinecap="round" transform="rotate(-8 110 70)" />
+                  <line x1="88" y1="54" x2="138" y2="47" stroke="var(--color-border)" strokeWidth="2" strokeLinecap="round" transform="rotate(-8 110 70)" />
+                  <line x1="88" y1="66" x2="118" y2="62" stroke="var(--color-border)" strokeWidth="2" strokeLinecap="round" transform="rotate(-8 110 70)" />
+
+                  {/* Floating Document 2 (front) */}
+                  <rect
+                    x="85"
+                    y="35"
+                    width="70"
+                    height="90"
+                    rx="8"
+                    fill="var(--color-surface)"
+                    stroke="url(#doc-glow)"
+                    strokeWidth="2"
+                    transform="rotate(4 120 80)"
+                    style={{ filter: "drop-shadow(0 4px 12px rgba(0,0,0,0.05))" }}
+                  />
+                  <line x1="97" y1="52" x2="142" y2="55" stroke="var(--color-text-muted)" strokeWidth="2.5" strokeLinecap="round" transform="rotate(4 120 80)" />
+                  <line x1="97" y1="66" x2="132" y2="68" stroke="var(--color-text-muted)" strokeWidth="2.5" strokeLinecap="round" transform="rotate(4 120 80)" />
+                  
+                  {/* Success Checkmark Circle on Doc 2 */}
+                  <circle cx="120" cy="95" r="14" fill="var(--color-applied-bg)" stroke="var(--color-applied-dot)" strokeWidth="1.5" transform="rotate(4 120 80)" />
+                  <path d="M115 95L118 98L125 91" stroke="var(--color-applied-text)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" transform="rotate(4 120 80)" />
+
+                  {/* Folder Front Overlay */}
+                  <path
+                    d="M40 75C40 69.4772 44.4772 65 50 65H190C195.523 65 200 69.4772 200 75V120C200 125.523 195.523 130 190 130H50C44.4772 130 40 125.523 40 120V75Z"
+                    fill="url(#folder-front)"
+                    opacity="0.95"
+                    stroke="url(#folder-border)"
+                    strokeWidth="1.5"
+                  />
+                </g>
+
+                {/* Sparkles / Floating Stars */}
+                <path
+                  className="sparkle-1"
+                  d="M210 40L213 45L218 46L213 47L210 52L207 47L202 46L207 45L210 40Z"
+                  fill="var(--color-accent)"
+                />
+                <path
+                  className="sparkle-2"
+                  d="M32 95L34 99L39 100L34 101L32 105L30 101L25 100L30 99L32 95Z"
+                  fill="var(--color-interview-dot)"
+                />
+                <path
+                  className="sparkle-3"
+                  d="M185 115L186.5 118L190 119L186.5 120L185 123L183.5 120L180 119L183.5 118L185 115Z"
+                  fill="var(--color-offer-dot)"
+                />
+
+                <defs>
+                  <radialGradient id="ambient-glow" cx="50%" cy="50%" r="50%">
+                    <stop offset="0%" stopColor="var(--color-accent)" stopOpacity="0.2" />
+                    <stop offset="100%" stopColor="var(--color-accent)" stopOpacity="0" />
+                  </radialGradient>
+                  <linearGradient id="folder-bg" x1="40" y1="40" x2="200" y2="130">
+                    <stop offset="0%" stopColor="var(--color-bg)" />
+                    <stop offset="100%" stopColor="var(--color-border)" />
+                  </linearGradient>
+                  <linearGradient id="folder-front" x1="40" y1="65" x2="200" y2="130">
+                    <stop offset="0%" stopColor="var(--color-surface)" stopOpacity="0.8" />
+                    <stop offset="100%" stopColor="var(--color-bg)" />
+                  </linearGradient>
+                  <linearGradient id="folder-border" x1="40" y1="40" x2="200" y2="130">
+                    <stop offset="0%" stopColor="var(--color-border)" />
+                    <stop offset="100%" stopColor="var(--color-text-muted)" />
+                  </linearGradient>
+                  <linearGradient id="doc-glow" x1="85" y1="35" x2="155" y2="125">
+                    <stop offset="0%" stopColor="var(--color-accent)" />
+                    <stop offset="100%" stopColor="var(--color-border)" />
+                  </linearGradient>
+                </defs>
+              </svg>
+              <h3 className="card-empty-state-title" style={{ fontSize: "22px", background: "linear-gradient(135deg, var(--color-text-primary) 30%, var(--color-text-secondary))", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
                 Welcome to Trackerr!
               </h3>
-              <p className="card-empty-state-text">
-                You haven't tracked any applications yet. Add your first internship to begin tracking your recruitment journey!
+              <p className="card-empty-state-text" style={{ fontSize: "14px", color: "var(--color-text-secondary)", maxWidth: "460px", marginBottom: "8px" }}>
+                You haven't tracked any applications yet. Add your first internship manually or upload an existing CSV spreadsheet to start tracking your recruitment journey!
               </p>
-              <button
-                onClick={() => {
-                  setEditingApplication(undefined);
-                  setSlideOverOpen(true);
-                }}
-                className="btn-primary"
-                style={{ height: "44px", padding: "0 24px" }}
-              >
-                <Plus size={16} /> Add your first internship
-              </button>
+              <div style={{ display: "flex", gap: "12px", flexWrap: "wrap", justifyContent: "center", alignItems: "center" }}>
+                <button
+                  onClick={() => {
+                    setEditingApplication(undefined);
+                    setSlideOverOpen(true);
+                  }}
+                  className="btn-primary"
+                  style={{ height: "40px", padding: "0 20px", display: "flex", alignItems: "center", gap: "8px" }}
+                >
+                  <Plus size={16} /> Add first internship
+                </button>
+                <CSVImporter userId={userId} onImportComplete={handleRefresh} />
+              </div>
             </div>
           ) : (
             <>
@@ -936,6 +1247,8 @@ export default function DashboardClient({
                     isDemo={isDemo}
                     onDemoStatusChange={handleDemoStatusChange}
                     onDelete={triggerDelete}
+                    staleThresholdDays={staleThresholdDays}
+                    onSnooze={handleSnooze}
                   />
                 ) : (
                    <KanbanBoard
@@ -947,6 +1260,8 @@ export default function DashboardClient({
                     }}
                     isDemo={isDemo}
                     onDemoStatusChange={handleDemoStatusChange}
+                    staleThresholdDays={staleThresholdDays}
+                    onSnooze={handleSnooze}
                   />
                 )}
               </section>
@@ -989,6 +1304,9 @@ export default function DashboardClient({
           onClick={() => setShowShortcutsModal(false)}
         >
           <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="shortcuts-title"
             style={{
               backgroundColor: 'var(--color-surface)',
               border: '1px solid var(--color-border)',
@@ -1001,12 +1319,14 @@ export default function DashboardClient({
             onClick={e => e.stopPropagation()}
           >
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', borderBottom: '1px solid var(--color-border)', paddingBottom: '12px' }}>
-              <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 700, color: 'var(--color-text-primary)' }}>
+              <h3 id="shortcuts-title" style={{ margin: 0, fontSize: '16px', fontWeight: 700, color: 'var(--color-text-primary)' }}>
                 Keyboard Shortcuts
               </h3>
               <button
+                autoFocus
                 onClick={() => setShowShortcutsModal(false)}
-                style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '18px', color: 'var(--color-text-secondary)', padding: '4px' }}
+                aria-label="Close keyboard shortcuts help dialog"
+                style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '18px', color: 'var(--color-text-secondary)', padding: '4px', minWidth: "32px", minHeight: "32px", display: "flex", alignItems: "center", justifyContent: "center", borderRadius: "4px" }}
               >
                 ✕
               </button>

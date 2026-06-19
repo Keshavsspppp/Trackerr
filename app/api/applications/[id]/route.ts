@@ -49,7 +49,7 @@ export async function PATCH(
       return NextResponse.json({ error: errorMessage }, { status: 400 });
     }
 
-    const { company, role, status, notes, jobUrl, appliedDate, source, capturedAt, originalUrl } = result.data;
+    const { company, role, status, notes, jobUrl, appliedDate, source, capturedAt, originalUrl, snoozedUntil } = result.data;
 
     await connectDB();
 
@@ -67,6 +67,9 @@ export async function PATCH(
     if (source !== undefined) updateFields.source = source;
     if (capturedAt !== undefined) updateFields.capturedAt = new Date(capturedAt);
     if (originalUrl !== undefined) updateFields.originalUrl = originalUrl;
+    if (snoozedUntil !== undefined) {
+      updateFields.snoozedUntil = snoozedUntil ? new Date(snoozedUntil) : null;
+    }
 
     const updated = await Application.findOneAndUpdate(
       { _id: id, userId },

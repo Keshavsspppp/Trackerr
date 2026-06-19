@@ -6,6 +6,7 @@ import type { IApplication } from './ApplicationList';
 import { getInitialsColor } from './ApplicationList';
 import SourceBadge from './SourceBadge';
 import { formatStaticDate } from '@/src/lib/applicationUtils';
+import { useToast } from '@/src/components/Toast';
 
 interface KanbanBoardProps {
   applications: IApplication[];
@@ -13,6 +14,8 @@ interface KanbanBoardProps {
   onEdit?: (application: IApplication) => void;
   isDemo?: boolean;
   onDemoStatusChange?: (id: string, newStatus: Status) => void;
+  staleThresholdDays?: number;
+  onSnooze?: (id: string) => void;
 }
 
 type Status = 'Applied' | 'Interview' | 'Offer' | 'Rejected';
@@ -42,10 +45,16 @@ function relativeTime(dateStr: string): string {
   return `${diffDays} days ago`;
 }
 
-function isStale(app: IApplication): boolean {
+function isStale(app: IApplication, thresholdDays: number = 14): boolean {
   if (app.status !== 'Applied') return false;
+  if (app.snoozedUntil) {
+    const snoozeTime = new Date(app.snoozedUntil).getTime();
+    if (!isNaN(snoozeTime) && snoozeTime > Date.now()) {
+      return false;
+    }
+  }
   const diff = Date.now() - new Date(app.lastUpdated).getTime();
-  return diff > 7 * 86400000;
+  return diff > thresholdDays * 86400000;
 }
 
 export default function KanbanBoard({
@@ -53,8 +62,11 @@ export default function KanbanBoard({
   onRefresh,
   onEdit,
   isDemo = false,
-  onDemoStatusChange
+  onDemoStatusChange,
+  staleThresholdDays = 14,
+  onSnooze
 }: KanbanBoardProps) {
+  const { showToast } = useToast();
   const [draggedId, setDraggedId] = useState<string | null>(null);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -90,6 +102,9 @@ export default function KanbanBoard({
         const data = await res.json().catch(() => ({}));
         setError((data as { error?: string }).error ?? 'Failed to update status');
       } else {
+        const app = applications.find(a => a._id === id);
+        const companyText = app ? ` at ${app.company}` : '';
+        showToast(`Moved internship${companyText} to ${newStatus} ✓`, 'success');
         onRefresh?.();
       }
     } catch {
@@ -208,7 +223,7 @@ export default function KanbanBoard({
 
               {/* Cards */}
               {apps.map(app => {
-                const stale = isMounted && isStale(app);
+                const stale = isMounted && isStale(app, staleThresholdDays);
                 const isDragging = draggedId === app._id;
                 const isUpdating = updatingId === app._id;
 
@@ -219,7 +234,7 @@ export default function KanbanBoard({
                     onDragStart={(e) => handleDragStart(e, app._id)}
                     onDragEnd={handleDragEnd}
                     className="hover-translate"
-                    title={isMounted && stale ? `No update in 7+ days` : undefined}
+                    title={isMounted && stale ? `No update in ${staleThresholdDays}+ days` : undefined}
                     style={{
                       backgroundColor: 'var(--color-surface)',
                       borderRadius: '8px',
@@ -277,19 +292,40 @@ export default function KanbanBoard({
 
                     {/* Applied Date */}
                     {app.appliedDate && (
-                      <p
-                        style={{
-                          fontSize: '12px',
-                          color: stale ? 'var(--color-stale-text)' : 'var(--color-text-secondary)',
-                          margin: 0,
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '4px',
-                        }}
-                      >
-                        {stale && <AlertTriangle size={12} style={{ color: 'var(--color-stale-border)' }} />}
-                        {isMounted ? relativeTime(app.appliedDate) : formatStaticDate(app.appliedDate)}
-                      </p>
+                      <>
+                        <p
+                          style={{
+                            fontSize: '12px',
+                            color: stale ? 'var(--color-stale-text)' : 'var(--color-text-secondary)',
+                            margin: 0,
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '4px',
+                          }}
+                        >
+                          {stale && <AlertTriangle size={12} style={{ color: 'var(--color-stale-border)' }} />}
+                          {isMounted ? relativeTime(app.appliedDate) : formatStaticDate(app.appliedDate)}
+                        </p>
+                        {stale && onSnooze && (
+                          <button
+                            onClick={() => onSnooze(app._id)}
+                            className="hover-btn-neutral"
+                            style={{
+                              alignSelf: "flex-start",
+                              fontSize: "11px",
+                              padding: "2px 6px",
+                              borderRadius: "4px",
+                              border: "1px solid var(--color-border)",
+                              background: "var(--color-surface)",
+                              color: "var(--color-text-secondary)",
+                              cursor: "pointer",
+                              marginTop: "2px",
+                            }}
+                          >
+                            Snooze 7d
+                          </button>
+                        )}
+                      </>
                     )}
 
                     {/* Notes Preview */}
@@ -316,11 +352,9 @@ export default function KanbanBoard({
                       }}
                       onClick={(e) => e.stopPropagation()}
                     >
-                      <label htmlFor={`mobile-status-select-${app._id}`} style={{ display: "none" }}>
-                        Move status
-                      </label>
                       <select
                         id={`mobile-status-select-${app._id}`}
+                        aria-label={`Change status for ${app.role} at ${app.company}`}
                         value={app.status}
                         disabled={isUpdating}
                         onChange={(e) => handleStatusChange(app._id, e.target.value as Status)}

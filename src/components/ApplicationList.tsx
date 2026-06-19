@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { Edit3, Trash2, Search, X, AlertTriangle } from "lucide-react";
+import { Edit3, Trash2, Search, X, AlertTriangle, Inbox } from "lucide-react";
 import SourceBadge from "./SourceBadge";
 import { formatStaticDate } from "@/src/lib/applicationUtils";
 import { useToast } from "@/src/components/Toast";
@@ -18,6 +18,7 @@ export interface IApplication {
   source?: "manual" | "extension" | "csv_import";
   lastUpdated: string;
   createdAt: string;
+  snoozedUntil?: string | Date;
 }
 
 interface ApplicationListProps {
@@ -27,6 +28,8 @@ interface ApplicationListProps {
   isDemo?: boolean;
   onDemoStatusChange?: (id: string, newStatus: IApplication["status"]) => void;
   onDelete?: (app: IApplication) => void;
+  staleThresholdDays?: number;
+  onSnooze?: (id: string) => void;
 }
 
 const STATUS_OPTIONS: IApplication["status"][] = [
@@ -85,10 +88,16 @@ function relativeTime(dateStr: string): string {
   return `${diffDays} days ago`;
 }
 
-function isStale(app: IApplication): boolean {
+function isStale(app: IApplication, thresholdDays: number = 14): boolean {
   if (app.status !== "Applied") return false;
+  if (app.snoozedUntil) {
+    const snoozeTime = new Date(app.snoozedUntil).getTime();
+    if (!isNaN(snoozeTime) && snoozeTime > Date.now()) {
+      return false;
+    }
+  }
   const diff = Date.now() - new Date(app.lastUpdated).getTime();
-  return diff > 7 * 86400000;
+  return diff > thresholdDays * 86400000;
 }
 
 export function getInitialsColor(name: string): { bg: string; text: string } {
@@ -119,7 +128,10 @@ export default function ApplicationList({
   isDemo = false,
   onDemoStatusChange,
   onDelete,
+  staleThresholdDays = 14,
+  onSnooze,
 }: ApplicationListProps) {
+  const { showToast } = useToast();
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isMounted, setIsMounted] = useState(false);
@@ -156,6 +168,9 @@ export default function ApplicationList({
         const data = await res.json().catch(() => ({}));
         setError((data as { error?: string }).error ?? "Failed to update status");
       } else {
+        const app = applications.find((a) => a._id === id);
+        const companyText = app ? ` at ${app.company}` : "";
+        showToast(`Moved internship${companyText} to ${newStatus} ✓`, "success");
         onRefresh?.();
       }
     } catch {
@@ -206,13 +221,28 @@ export default function ApplicationList({
           borderRadius: "12px",
           border: "1px solid var(--color-border)",
           textAlign: "center",
-          gap: "8px",
+          gap: "12px",
         }}
       >
-        <span style={{ fontSize: "40px", lineHeight: 1 }}>📭</span>
+        <div
+          style={{
+            width: "56px",
+            height: "56px",
+            borderRadius: "50%",
+            backgroundColor: "var(--color-bg)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            color: "var(--color-text-muted)",
+            marginBottom: "4px",
+            border: "1px solid var(--color-border)",
+          }}
+        >
+          <Inbox size={28} />
+        </div>
         <p
           style={{
-            margin: "8px 0 4px",
+            margin: "4px 0 0",
             fontSize: "16px",
             fontWeight: 600,
             color: "var(--color-text-primary)",
@@ -275,6 +305,7 @@ export default function ApplicationList({
           <input
             type="text"
             placeholder="Search by company or role..."
+            aria-label="Search by company or role"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             style={{
@@ -414,7 +445,7 @@ export default function ApplicationList({
                 </thead>
                 <tbody>
                   {sorted.map((app) => {
-                    const stale = isMounted && isStale(app);
+                    const stale = isMounted && isStale(app, staleThresholdDays);
                     const cfg = STATUS_CONFIG[app.status];
 
                     return (
@@ -513,28 +544,49 @@ export default function ApplicationList({
                         {/* Applied Date — relative time with stale tooltip */}
                         <td style={tdStyle}>
                           {app.appliedDate ? (
-                            <span
-                              title={
-                                isMounted
-                                  ? stale
-                                    ? `⚠ No update in 7+ days (${new Date(app.appliedDate).toLocaleDateString()})`
-                                    : new Date(app.appliedDate).toLocaleDateString()
-                                  : formatStaticDate(app.appliedDate)
-                              }
-                              style={{
-                                color: stale ? "var(--color-stale-text)" : "var(--color-text-secondary)",
-                                fontSize: "13px",
-                                cursor: "default",
-                                display: "flex",
-                                alignItems: "center",
-                                gap: "4px",
-                              }}
-                            >
-                              {stale && (
-                                <AlertTriangle size={14} style={{ color: "var(--color-stale-border)" }} />
+                            <>
+                              <span
+                                title={
+                                  isMounted
+                                    ? stale
+                                      ? `⚠ No update in ${staleThresholdDays}+ days (${new Date(app.appliedDate).toLocaleDateString()})`
+                                      : new Date(app.appliedDate).toLocaleDateString()
+                                    : formatStaticDate(app.appliedDate)
+                                }
+                                style={{
+                                  color: stale ? "var(--color-stale-text)" : "var(--color-text-secondary)",
+                                  fontSize: "13px",
+                                  cursor: "default",
+                                  display: "flex",
+                                  alignItems: "center",
+                                  gap: "4px",
+                                }}
+                              >
+                                {stale && (
+                                  <AlertTriangle size={14} style={{ color: "var(--color-stale-border)" }} />
+                                )}
+                                {isMounted ? relativeTime(app.appliedDate) : formatStaticDate(app.appliedDate)}
+                              </span>
+                              {stale && onSnooze && (
+                                <button
+                                  onClick={() => onSnooze(app._id)}
+                                  className="hover-btn-neutral"
+                                  style={{
+                                    alignSelf: "flex-start",
+                                    fontSize: "11px",
+                                    padding: "2px 6px",
+                                    borderRadius: "4px",
+                                    border: "1px solid var(--color-border)",
+                                    background: "var(--color-surface)",
+                                    color: "var(--color-text-secondary)",
+                                    cursor: "pointer",
+                                    marginTop: "2px",
+                                  }}
+                                >
+                                  Snooze 7d
+                                </button>
                               )}
-                              {isMounted ? relativeTime(app.appliedDate) : formatStaticDate(app.appliedDate)}
-                            </span>
+                            </>
                           ) : (
                             <span style={{ color: "var(--color-text-muted)" }}>—</span>
                           )}
@@ -678,7 +730,7 @@ export default function ApplicationList({
           {/* Mobile Card Layout */}
           <div className="mobile-card-list">
             {sorted.map((app) => {
-              const stale = isMounted && isStale(app);
+              const stale = isMounted && isStale(app, staleThresholdDays);
               const cfg = STATUS_CONFIG[app.status];
 
               return (
@@ -793,18 +845,39 @@ export default function ApplicationList({
                       </div>
                       <div>
                         {app.appliedDate ? (
-                          <span
-                            style={{
-                              color: stale ? "var(--color-stale-text)" : "var(--color-text-secondary)",
-                              fontWeight: 500,
-                              display: "flex",
-                              alignItems: "center",
-                              gap: "4px",
-                            }}
-                          >
-                            {stale && <AlertTriangle size={14} style={{ color: "var(--color-stale-border)" }} />}
-                            {isMounted ? relativeTime(app.appliedDate) : formatStaticDate(app.appliedDate)}
-                          </span>
+                          <>
+                            <span
+                              style={{
+                                color: stale ? "var(--color-stale-text)" : "var(--color-text-secondary)",
+                                fontWeight: 500,
+                                display: "flex",
+                                alignItems: "center",
+                                gap: "4px",
+                              }}
+                            >
+                              {stale && <AlertTriangle size={14} style={{ color: "var(--color-stale-border)" }} />}
+                              {isMounted ? relativeTime(app.appliedDate) : formatStaticDate(app.appliedDate)}
+                            </span>
+                            {stale && onSnooze && (
+                              <button
+                                onClick={() => onSnooze(app._id)}
+                                className="hover-btn-neutral"
+                                style={{
+                                  alignSelf: "flex-start",
+                                  fontSize: "11px",
+                                  padding: "2px 6px",
+                                  borderRadius: "4px",
+                                  border: "1px solid var(--color-border)",
+                                  background: "var(--color-surface)",
+                                  color: "var(--color-text-secondary)",
+                                  cursor: "pointer",
+                                  marginTop: "2px",
+                                }}
+                              >
+                                Snooze 7d
+                              </button>
+                            )}
+                          </>
                         ) : (
                           <span style={{ color: "var(--color-text-muted)" }}>—</span>
                         )}
