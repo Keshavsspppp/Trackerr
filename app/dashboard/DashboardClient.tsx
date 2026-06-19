@@ -91,14 +91,18 @@ export default function DashboardClient({
     <div className="layout-root">
       {/* ── Sidebar (desktop only) ── */}
       <aside className="layout-sidebar" aria-label="Main navigation">
-        {/* Wordmark */}
+        {/* Wordmark with Logo */}
         <div
           style={{
-            padding: "24px 20px 20px",
+            padding: "20px 20px 16px",
             borderBottom: "1px solid #E5E7EB",
             flexShrink: 0,
+            display: "flex",
+            alignItems: "center",
+            gap: "10px",
           }}
         >
+          <img src="/logo.png" alt="Trackerr Logo" width="28" height="28" style={{ borderRadius: "50%" }} />
           <span
             style={{
               fontSize: "20px",
@@ -254,16 +258,19 @@ export default function DashboardClient({
             >
               ☰
             </button>
-            <span
-              style={{
-                fontSize: "18px",
-                fontWeight: 700,
-                color: "#111827",
-                letterSpacing: "-0.3px",
-              }}
-            >
-              Trackerr<span style={{ color: "#3B82F6" }}>.</span>
-            </span>
+            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+              <img src="/logo.png" alt="Trackerr Logo" width="24" height="24" style={{ borderRadius: "50%" }} />
+              <span
+                style={{
+                  fontSize: "18px",
+                  fontWeight: 700,
+                  color: "#111827",
+                  letterSpacing: "-0.3px",
+                }}
+              >
+                Trackerr<span style={{ color: "#3B82F6" }}>.</span>
+              </span>
+            </div>
           </div>
           <button
             onClick={() => setSlideOverOpen(true)}
@@ -316,10 +323,14 @@ export default function DashboardClient({
             >
               <div
                 style={{
-                  padding: "24px 20px 20px",
+                  padding: "20px 20px 16px",
                   borderBottom: "1px solid #E5E7EB",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "10px",
                 }}
               >
+                <img src="/logo.png" alt="Trackerr Logo" width="28" height="28" style={{ borderRadius: "50%" }} />
                 <span
                   style={{
                     fontSize: "20px",

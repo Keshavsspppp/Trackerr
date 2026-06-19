@@ -15,7 +15,7 @@ export const metadata: Metadata = {
   title: "Trackerr",
   description: "Track your internship applications in one place",
   icons: {
-    icon: '/favicon.ico',
+    icon: '/logo.png',
   },
   viewport: 'width=device-width, initial-scale=1',
 };

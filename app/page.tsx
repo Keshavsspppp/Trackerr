@@ -15,8 +15,9 @@ export default function Home() {
         padding: '24px',
       }}
     >
-      {/* Wordmark */}
-      <div style={{ marginBottom: '16px', textAlign: 'center' }}>
+      {/* Wordmark with Logo */}
+      <div style={{ marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '10px', justifyContent: 'center' }}>
+        <img src="/logo.png" alt="Trackerr Logo" width="36" height="36" style={{ borderRadius: '50%' }} />
         <span
           style={{
             fontSize: '28px',
