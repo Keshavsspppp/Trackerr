@@ -367,3 +367,57 @@ body {
 @media (min-width: 1024px) {
   /* Desktop styles */
 }
+
+/* ── Responsive Table / Cards ───────────────────────────────────────────── */
+@media (max-width: 767px) {
+  .desktop-table-container {
+    display: none !important;
+  }
+  .mobile-card-list {
+    display: flex !important;
+    flex-direction: column;
+    gap: 14px;
+  }
+}
+@media (min-width: 768px) {
+  .desktop-table-container {
+    display: block !important;
+  }
+  .mobile-card-list {
+    display: none !important;
+  }
+}
+
+/* ── Deletion Modal Overlay ──────────────────────────────────────────────── */
+.delete-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  opacity: 0;
+  animation: fadeIn 200ms ease-out forwards;
+}
+
+.delete-modal-card {
+  background-color: #FFFFFF;
+  border-radius: 12px;
+  width: 90%;
+  max-width: 440px;
+  padding: 24px;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  border: 1px solid #E5E7EB;
+  transform: scale(0.95);
+  animation: scaleUp 200ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes fadeIn {
+  to { opacity: 1; }
+}
+
+@keyframes scaleUp {
+  to { transform: scale(1); }
+}

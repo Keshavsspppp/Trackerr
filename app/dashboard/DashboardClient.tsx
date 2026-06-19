@@ -436,138 +436,194 @@ export default function DashboardClient({
             </button>
           </div>
 
-          {/* Stats Cards — only on Dashboard view */}
-          {view === "dashboard" && (
-          <section aria-labelledby="stats-heading" style={{ marginBottom: "28px" }}>
-            <h2
-              id="stats-heading"
-              style={{
-                margin: "0 0 14px",
-                fontSize: "13px",
-                fontWeight: 600,
-                color: "#6B7280",
-                textTransform: "uppercase",
-                letterSpacing: "0.06em",
-              }}
-            >
-              Overview
-            </h2>
-            <StatsCards stats={stats} />
-          </section>
-          )}
-
-          {/* Analytics Charts — only on Dashboard view */}
-          {view === "dashboard" && (
-            <>
-              <section style={{ marginBottom: "28px" }}>
-                <FunnelChart
-                  stats={{
-                    applied: stats.byStatus.Applied,
-                    interview: stats.byStatus.Interview,
-                    offer: stats.byStatus.Offer,
-                    rejected: stats.byStatus.Rejected,
-                  }}
-                />
-              </section>
-
-              <section style={{ marginBottom: "28px" }}>
-                <VelocityChart applications={applications} />
-              </section>
-            </>
-          )}
-
-          {/* Filter pills + table section */}
-          <section aria-labelledby="apps-heading">
+          {applications.length === 0 ? (
             <div
               style={{
                 display: "flex",
+                flexDirection: "column",
                 alignItems: "center",
-                justifyContent: "space-between",
-                marginBottom: "14px",
-                flexWrap: "wrap",
-                gap: "12px",
+                justifyContent: "center",
+                padding: "80px 24px",
+                background: "#FFFFFF",
+                borderRadius: "16px",
+                border: "1px solid #E5E7EB",
+                textAlign: "center",
+                gap: "16px",
+                boxShadow: "0 1px 3px rgba(0,0,0,0.05)",
+                marginTop: "20px",
               }}
             >
-              <h2
-                id="apps-heading"
+              <span style={{ fontSize: "64px", lineHeight: 1 }}>🎓</span>
+              <h3 style={{ margin: 0, fontSize: "20px", fontWeight: 700, color: "#111827" }}>
+                Welcome to Trackerr!
+              </h3>
+              <p style={{ margin: 0, fontSize: "15px", color: "#6B7280", maxWidth: "420px", lineHeight: 1.5 }}>
+                You haven't tracked any applications yet. Add your first internship to begin tracking your recruitment journey!
+              </p>
+              <button
+                onClick={() => setSlideOverOpen(true)}
                 style={{
-                  margin: 0,
-                  fontSize: "13px",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: "8px",
+                  height: "44px",
+                  padding: "0 24px",
+                  background: "#3B82F6",
+                  color: "#FFFFFF",
+                  border: "none",
+                  borderRadius: "8px",
+                  fontSize: "14px",
                   fontWeight: 600,
-                  color: "#6B7280",
-                  textTransform: "uppercase",
-                  letterSpacing: "0.06em",
+                  cursor: "pointer",
+                  transition: "background 150ms ease",
+                }}
+                onMouseEnter={(e) => {
+                  (e.currentTarget as HTMLButtonElement).style.background = "#2563EB";
+                }}
+                onMouseLeave={(e) => {
+                  (e.currentTarget as HTMLButtonElement).style.background = "#3B82F6";
                 }}
               >
-                {view === "all" ? `All Internships (${filteredApplications.length})` : "Internships"}
-                {view === "dashboard" && selectedStatus && (
-                  <span
-                    style={{
-                      marginLeft: "8px",
-                      fontWeight: 400,
-                      textTransform: "none",
-                      letterSpacing: 0,
-                      color: "#9CA3AF",
-                    }}
-                  >
-                    — {selectedStatus} ({filteredApplications.length})
-                  </span>
-                )}
-              </h2>
-
-              {/* View Toggle and CSV buttons */}
-              <div style={{ display: "flex", gap: "8px", alignItems: "center", flexWrap: "wrap" }}>
-                <ViewToggle currentView={viewMode} onViewChange={handleViewChange} />
-                <button
-                  onClick={handleExportCSV}
+                + Add your first internship
+              </button>
+            </div>
+          ) : (
+            <>
+              {/* Stats Cards — only on Dashboard view */}
+              {view === "dashboard" && (
+              <section aria-labelledby="stats-heading" style={{ marginBottom: "28px" }}>
+                <h2
+                  id="stats-heading"
                   style={{
-                    padding: "8px 16px",
-                    backgroundColor: "#6366F1",
-                    color: "#FFFFFF",
-                    border: "none",
-                    borderRadius: "8px",
-                    fontSize: "14px",
+                    margin: "0 0 14px",
+                    fontSize: "13px",
                     fontWeight: 600,
-                    cursor: "pointer",
-                    transition: "background 150ms ease",
-                  }}
-                  onMouseEnter={(e) => {
-                    (e.currentTarget as HTMLButtonElement).style.backgroundColor = "#4F46E5";
-                  }}
-                  onMouseLeave={(e) => {
-                    (e.currentTarget as HTMLButtonElement).style.backgroundColor = "#6366F1";
+                    color: "#6B7280",
+                    textTransform: "uppercase",
+                    letterSpacing: "0.06em",
                   }}
                 >
-                  📤 Export CSV
-                </button>
-                <CSVImporter userId={userId} onImportComplete={handleRefresh} />
-              </div>
-            </div>
+                  Overview
+                </h2>
+                <StatsCards stats={stats} />
+              </section>
+              )}
 
-            {/* Filter pills — only on Dashboard view */}
-            {view === "dashboard" && (
-            <div style={{ marginBottom: "20px" }}>
-              <StatusFilter
-                stats={stats}
-                selectedStatus={selectedStatus}
-                onFilter={(status) => setSelectedStatus(status)}
-              />
-            </div>
-            )}
+              {/* Analytics Charts — only on Dashboard view */}
+              {view === "dashboard" && (
+                <>
+                  <section style={{ marginBottom: "28px" }}>
+                    <FunnelChart
+                      stats={{
+                        applied: stats.byStatus.Applied,
+                        interview: stats.byStatus.Interview,
+                        offer: stats.byStatus.Offer,
+                        rejected: stats.byStatus.Rejected,
+                      }}
+                    />
+                  </section>
 
-            {/* Application table or Kanban board */}
-            {viewMode === 'table' ? (
-              <ApplicationList
-                applications={filteredApplications}
-                onRefresh={handleRefresh}
-              />
-            ) : (
-              <KanbanBoard
-                applications={filteredApplications}
-                onRefresh={handleRefresh}
-              />
-            )}
-          </section>
+                  <section style={{ marginBottom: "28px" }}>
+                    <VelocityChart applications={applications} />
+                  </section>
+                </>
+              )}
+
+              {/* Filter pills + table section */}
+              <section aria-labelledby="apps-heading">
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    marginBottom: "14px",
+                    flexWrap: "wrap",
+                    gap: "12px",
+                  }}
+                >
+                  <h2
+                    id="apps-heading"
+                    style={{
+                      margin: 0,
+                      fontSize: "13px",
+                      fontWeight: 600,
+                      color: "#6B7280",
+                      textTransform: "uppercase",
+                      letterSpacing: "0.06em",
+                    }}
+                  >
+                    {view === "all" ? `All Internships (${filteredApplications.length})` : "Internships"}
+                    {view === "dashboard" && selectedStatus && (
+                      <span
+                        style={{
+                          marginLeft: "8px",
+                          fontWeight: 400,
+                          textTransform: "none",
+                          letterSpacing: 0,
+                          color: "#9CA3AF",
+                        }}
+                      >
+                        — {selectedStatus} ({filteredApplications.length})
+                      </span>
+                    )}
+                  </h2>
+
+                  {/* View Toggle and CSV buttons */}
+                  <div style={{ display: "flex", gap: "8px", alignItems: "center", flexWrap: "wrap" }}>
+                    <ViewToggle currentView={viewMode} onViewChange={handleViewChange} />
+                    <button
+                      onClick={handleExportCSV}
+                      style={{
+                        padding: "8px 16px",
+                        backgroundColor: "#6366F1",
+                        color: "#FFFFFF",
+                        border: "none",
+                        borderRadius: "8px",
+                        fontSize: "14px",
+                        fontWeight: 600,
+                        cursor: "pointer",
+                        transition: "background 150ms ease",
+                      }}
+                      onMouseEnter={(e) => {
+                        (e.currentTarget as HTMLButtonElement).style.backgroundColor = "#4F46E5";
+                      }}
+                      onMouseLeave={(e) => {
+                        (e.currentTarget as HTMLButtonElement).style.backgroundColor = "#6366F1";
+                      }}
+                    >
+                      📤 Export CSV
+                    </button>
+                    <CSVImporter userId={userId} onImportComplete={handleRefresh} />
+                  </div>
+                </div>
+
+                {/* Filter pills — only on Dashboard view */}
+                {view === "dashboard" && (
+                <div style={{ marginBottom: "20px" }}>
+                  <StatusFilter
+                    stats={stats}
+                    selectedStatus={selectedStatus}
+                    onFilter={(status) => setSelectedStatus(status)}
+                  />
+                </div>
+                )}
+
+                {/* Application table or Kanban board */}
+                {viewMode === 'table' ? (
+                  <ApplicationList
+                    applications={filteredApplications}
+                    onRefresh={handleRefresh}
+                  />
+                ) : (
+                  <KanbanBoard
+                    applications={filteredApplications}
+                    onRefresh={handleRefresh}
+                  />
+                )}
+              </section>
+            </>
+          )}
         </main>
       </div>
 
