@@ -14,6 +14,10 @@ const inter = Inter({
 export const metadata: Metadata = {
   title: "Trackerr",
   description: "Track your job applications in one place",
+  icons: {
+    icon: '/favicon.ico',
+  },
+  viewport: 'width=device-width, initial-scale=1',
 };
 
 export default function RootLayout({

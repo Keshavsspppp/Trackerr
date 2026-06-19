@@ -321,3 +321,49 @@ body {
     padding: 20px 16px 48px !important;
   }
 }
+
+/* ── Loading Skeleton Animation ─────────────────────────────────────────── */
+.skeleton-bar {
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: 4px;
+  height: 16px;
+  margin: 8px 0;
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skeleton-bar {
+    animation: none;
+  }
+}
+
+/* ── Responsive Breakpoints ─────────────────────────────────────────────── */
+:root {
+  --mobile-breakpoint: 768px;
+  --tablet-breakpoint: 1024px;
+}
+
+@media (max-width: 767px) {
+  /* Mobile styles */
+  :root {
+    font-size: 14px;
+  }
+}
+
+@media (min-width: 768px) and (max-width: 1023px) {
+  /* Tablet styles */
+}
+
+@media (min-width: 1024px) {
+  /* Desktop styles */
+}

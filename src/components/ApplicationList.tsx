@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import SourceBadge from "./SourceBadge";
 
 export interface IApplication {
   _id: string;
@@ -260,9 +261,14 @@ export default function ApplicationList({
                 >
                   {/* Company */}
                   <td style={tdStyle}>
-                    <span style={{ fontWeight: 600, color: "#111827" }}>
-                      {app.company}
-                    </span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <span style={{ fontWeight: 600, color: "#111827" }}>
+                        {app.company}
+                      </span>
+                      {app.source && app.source !== 'manual' && (
+                        <SourceBadge source={app.source} />
+                      )}
+                    </div>
                   </td>
 
                   {/* Role */}

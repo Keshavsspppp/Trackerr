@@ -1,4 +1,4 @@
-<div align="center">
+
 
 # 📋 Trackerr
 
@@ -208,9 +208,6 @@ Please make sure all tests pass before submitting a PR.
 Distributed under the [MIT License](LICENSE).
 
 ---
-
-<div align="center">
-
 Built with ❤️ by [Keshavsspppp](https://github.com/Keshavsspppp)
 
 </div>

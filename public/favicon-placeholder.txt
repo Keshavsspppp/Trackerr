@@ -1,0 +1,13 @@
+﻿# Favicon Asset
+
+This is a placeholder for the favicon.ico file.
+
+**Required Specifications:**
+- Dimensions: 32×32 pixels
+- Format: ICO
+- Design: Trackerr 'T' logo or briefcase icon with brand colors (#3B82F6 blue)
+
+**To complete:**
+1. Create or obtain a 32×32 pixel favicon design
+2. Save as favicon.ico
+3. Place in the public/ directory

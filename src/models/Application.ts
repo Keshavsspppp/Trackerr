@@ -13,6 +13,9 @@ export interface IApplication extends Document {
   lastUpdated: Date;
   lastReminderSent?: Date;
   createdAt: Date;
+  source?: 'manual' | 'extension' | 'csv_import';
+  capturedAt?: Date;
+  originalUrl?: string;
 }
 
 const ApplicationSchema = new Schema<IApplication>(
@@ -32,6 +35,13 @@ const ApplicationSchema = new Schema<IApplication>(
     notes: { type: String },
     lastUpdated: { type: Date, default: Date.now },
     lastReminderSent: { type: Date },
+    source: {
+      type: String,
+      enum: ['manual', 'extension', 'csv_import'],
+      default: 'manual',
+    },
+    capturedAt: { type: Date },
+    originalUrl: { type: String },
   },
   { timestamps: { createdAt: 'createdAt', updatedAt: false } }
 );

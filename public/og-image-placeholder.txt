@@ -1,0 +1,19 @@
+﻿# OpenGraph Image Asset
+
+This is a placeholder for the og-image.png file.
+
+**Required Specifications:**
+- Dimensions: 1200×630 pixels
+- Format: PNG
+- Design elements:
+  - Trackerr wordmark/logo (top-left or center)
+  - Visual: 4-column pipeline graphic showing Applied → Interview → Offer → Rejected
+  - Background: Clean gradient or solid brand color
+  - Text: 'Track Your Job Applications' tagline
+- File size: < 100KB (compressed)
+
+**To complete:**
+1. Create or obtain a 1200×630 pixel OG image design
+2. Compress to under 100KB
+3. Save as og-image.png
+4. Place in the public/ directory

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useSession, signOut } from "next-auth/react";
 import StatsCards from "@/src/components/StatsCards";
@@ -11,6 +11,12 @@ import ApplicationList, {
 } from "@/src/components/ApplicationList";
 import SlideOver from "@/src/components/SlideOver";
 import { useToast } from "@/src/components/Toast";
+import ViewToggle from "@/src/components/ViewToggle";
+import KanbanBoard from "@/src/components/KanbanBoard";
+import FunnelChart from "@/src/components/FunnelChart";
+import VelocityChart from "@/src/components/VelocityChart";
+import CSVImporter from "@/src/components/CSVImporter";
+import { exportApplicationsToCSV } from "@/src/lib/csvExport";
 import type { IApplicationStats } from "@/app/api/applications/stats/route";
 
 interface DashboardClientProps {
@@ -29,11 +35,25 @@ export default function DashboardClient({
   const { showToast } = useToast();
 
   const [view, setView] = useState<"dashboard" | "all">("dashboard");
+  const [viewMode, setViewMode] = useState<'table' | 'kanban'>('table');
   const [selectedStatus, setSelectedStatus] = useState<
     ApplicationStatus | undefined
   >(undefined);
   const [slideOverOpen, setSlideOverOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  // Load saved view mode from localStorage on mount
+  useEffect(() => {
+    const savedView = localStorage.getItem('trackerr_view_mode');
+    if (savedView === 'table' || savedView === 'kanban') {
+      setViewMode(savedView);
+    }
+  }, []);
+
+  function handleViewChange(newView: 'table' | 'kanban') {
+    setViewMode(newView);
+    localStorage.setItem('trackerr_view_mode', newView);
+  }
 
   function handleRefresh() {
     router.refresh();
@@ -43,6 +63,13 @@ export default function DashboardClient({
     setSlideOverOpen(false);
     handleRefresh();
   }
+
+  function handleExportCSV() {
+    exportApplicationsToCSV(applications);
+    showToast('CSV exported successfully', 'success');
+  }
+
+  const userId = session?.user ? (session.user as { id?: string }).id || '' : '';
 
   const filteredApplications =
     selectedStatus === undefined
@@ -412,6 +439,26 @@ export default function DashboardClient({
           </section>
           )}
 
+          {/* Analytics Charts — only on Dashboard view */}
+          {view === "dashboard" && (
+            <>
+              <section style={{ marginBottom: "28px" }}>
+                <FunnelChart
+                  stats={{
+                    applied: stats.byStatus.Applied,
+                    interview: stats.byStatus.Interview,
+                    offer: stats.byStatus.Offer,
+                    rejected: stats.byStatus.Rejected,
+                  }}
+                />
+              </section>
+
+              <section style={{ marginBottom: "28px" }}>
+                <VelocityChart applications={applications} />
+              </section>
+            </>
+          )}
+
           {/* Filter pills + table section */}
           <section aria-labelledby="apps-heading">
             <div
@@ -450,6 +497,34 @@ export default function DashboardClient({
                   </span>
                 )}
               </h2>
+
+              {/* View Toggle and CSV buttons */}
+              <div style={{ display: "flex", gap: "8px", alignItems: "center", flexWrap: "wrap" }}>
+                <ViewToggle currentView={viewMode} onViewChange={handleViewChange} />
+                <button
+                  onClick={handleExportCSV}
+                  style={{
+                    padding: "8px 16px",
+                    backgroundColor: "#6366F1",
+                    color: "#FFFFFF",
+                    border: "none",
+                    borderRadius: "8px",
+                    fontSize: "14px",
+                    fontWeight: 600,
+                    cursor: "pointer",
+                    transition: "background 150ms ease",
+                  }}
+                  onMouseEnter={(e) => {
+                    (e.currentTarget as HTMLButtonElement).style.backgroundColor = "#4F46E5";
+                  }}
+                  onMouseLeave={(e) => {
+                    (e.currentTarget as HTMLButtonElement).style.backgroundColor = "#6366F1";
+                  }}
+                >
+                  📤 Export CSV
+                </button>
+                <CSVImporter userId={userId} onImportComplete={handleRefresh} />
+              </div>
             </div>
 
             {/* Filter pills — only on Dashboard view */}
@@ -463,11 +538,18 @@ export default function DashboardClient({
             </div>
             )}
 
-            {/* Application table */}
-            <ApplicationList
-              applications={filteredApplications}
-              onRefresh={handleRefresh}
-            />
+            {/* Application table or Kanban board */}
+            {viewMode === 'table' ? (
+              <ApplicationList
+                applications={filteredApplications}
+                onRefresh={handleRefresh}
+              />
+            ) : (
+              <KanbanBoard
+                applications={filteredApplications}
+                onRefresh={handleRefresh}
+              />
+            )}
           </section>
         </main>
       </div>

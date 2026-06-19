@@ -70,7 +70,7 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json();
-    const { company, role, status, appliedDate, jobUrl, notes } = body;
+    const { company, role, status, appliedDate, jobUrl, notes, source, capturedAt, originalUrl } = body;
 
     // Validate required fields — must be non-empty and non-whitespace
     if (!company || typeof company !== 'string' || !company.trim()) {
@@ -116,6 +116,33 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    // Validate source — must be one of the allowed values when provided
+    if (source !== undefined && !['manual', 'extension', 'csv_import'].includes(source)) {
+      return NextResponse.json(
+        { error: 'source must be one of: manual, extension, csv_import' },
+        { status: 400 }
+      );
+    }
+
+    // Validate capturedAt — must parse to a real date when provided
+    if (capturedAt !== undefined) {
+      const parsed = new Date(capturedAt);
+      if (isNaN(parsed.getTime())) {
+        return NextResponse.json(
+          { error: 'capturedAt must be a valid date string' },
+          { status: 400 }
+        );
+      }
+    }
+
+    // Validate originalUrl — must be a string when provided
+    if (originalUrl !== undefined && typeof originalUrl !== 'string') {
+      return NextResponse.json(
+        { error: 'originalUrl must be a string' },
+        { status: 400 }
+      );
+    }
+
     await connectDB();
 
     const application = await Application.create({
@@ -127,6 +154,9 @@ export async function POST(req: NextRequest) {
       ...(appliedDate !== undefined ? { appliedDate: new Date(appliedDate) } : {}),
       ...(jobUrl !== undefined ? { jobUrl } : {}),
       ...(notes !== undefined ? { notes } : {}),
+      source: source || 'manual', // Default to 'manual' when not provided
+      ...(capturedAt !== undefined ? { capturedAt: new Date(capturedAt) } : {}),
+      ...(originalUrl !== undefined ? { originalUrl } : {}),
       lastUpdated: new Date(),
     });
 

@@ -80,4 +80,64 @@ describe('Application schema validation', () => {
       expect(doc.status).toBe(status);
     }
   });
+
+  it('defaults source to "manual" when source is omitted', async () => {
+    const doc = new Application({
+      userId: 'user-1',
+      userEmail: 'user@example.com',
+      company: 'Acme Corp',
+      role: 'Software Engineer',
+    });
+
+    await expect(doc.validate()).resolves.toBeUndefined();
+    expect(doc.source).toBe('manual');
+  });
+
+  it('accepts all valid source values without throwing', async () => {
+    const validSources = ['manual', 'extension', 'csv_import'] as const;
+
+    for (const source of validSources) {
+      const doc = new Application({
+        userId: 'user-1',
+        userEmail: 'user@example.com',
+        company: 'Acme Corp',
+        role: 'Software Engineer',
+        source,
+      });
+
+      await expect(doc.validate()).resolves.toBeUndefined();
+      expect(doc.source).toBe(source);
+    }
+  });
+
+  it('throws a ValidationError when source is an invalid enum value', async () => {
+    const doc = new Application({
+      userId: 'user-1',
+      userEmail: 'user@example.com',
+      company: 'Acme Corp',
+      role: 'Software Engineer',
+      source: 'invalid_source', // not a valid source
+    });
+
+    await expect(doc.validate()).rejects.toThrow(mongoose.Error.ValidationError);
+  });
+
+  it('accepts optional capturedAt and originalUrl fields', async () => {
+    const capturedAt = new Date('2024-01-15T10:30:00Z');
+    const originalUrl = 'https://example.com/job/12345';
+
+    const doc = new Application({
+      userId: 'user-1',
+      userEmail: 'user@example.com',
+      company: 'Acme Corp',
+      role: 'Software Engineer',
+      source: 'extension',
+      capturedAt,
+      originalUrl,
+    });
+
+    await expect(doc.validate()).resolves.toBeUndefined();
+    expect(doc.capturedAt).toEqual(capturedAt);
+    expect(doc.originalUrl).toBe(originalUrl);
+  });
 });
