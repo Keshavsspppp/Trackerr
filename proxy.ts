@@ -20,13 +20,9 @@ export async function proxy(req: NextRequest) {
 }
 
 export const config = {
-  // Bug #3 fix: explicitly include exact root paths alongside wildcard sub-paths
-  // so /dashboard and /api/applications (with no trailing slash) are also matched.
+  // Explicitly match all request paths except for static assets, next-auth, and favicons
   matcher: [
-    '/dashboard',
-    '/dashboard/:path*',
-    '/api/applications',
-    '/api/applications/:path*',
+    '/((?!api/auth|_next/static|_next/image|favicon.ico).*)',
   ],
 };
 

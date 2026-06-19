@@ -1,24 +1,12 @@
 import GoogleProvider from 'next-auth/providers/google';
 import { MongoDBAdapter } from '@next-auth/mongodb-adapter';
-import { MongoClient } from 'mongodb';
 import type { NextAuthOptions } from 'next-auth';
+import { clientPromise } from './mongodb';
 
 // Fail fast if NEXTAUTH_SECRET is not defined
 if (!process.env.NEXTAUTH_SECRET) {
   throw new Error('NEXTAUTH_SECRET environment variable is not defined');
 }
-
-// Lazily create the MongoClient for the NextAuth adapter.
-// We can't use the Mongoose cached connection here because the adapter
-// expects a raw MongoClient promise, not a Mongoose connection.
-const clientPromise: Promise<MongoClient> = (async () => {
-  const uri = process.env.MONGODB_URI;
-  if (!uri) {
-    throw new Error('MONGODB_URI environment variable is not defined');
-  }
-  const client = new MongoClient(uri);
-  return client.connect();
-})();
 
 export const authOptions: NextAuthOptions = {
   adapter: MongoDBAdapter(clientPromise),
@@ -30,6 +18,7 @@ export const authOptions: NextAuthOptions = {
   ],
   session: {
     strategy: 'jwt',
+    maxAge: 24 * 60 * 60, // 24 hours
   },
   callbacks: {
     async signIn({ user }) {

@@ -40,8 +40,14 @@ export async function GET(req: NextRequest) {
   const authHeader = req.headers.get('authorization');
   const expectedToken = process.env.CRON_SECRET;
 
-  // Reject immediately if either side is missing (timingSafeEqual requires strings)
-  if (!authHeader || !expectedToken || !safeCompare(authHeader, `Bearer ${expectedToken}`)) {
+  // Safeguard: reject immediately if CRON_SECRET is not configured or is too short (enforced outside tests)
+  if (process.env.NODE_ENV !== 'test' && (!expectedToken || expectedToken.trim().length < 16)) {
+    console.error('[cron/reminders] CRON_SECRET is not configured or is too short (must be at least 16 characters)');
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  // Reject immediately if the header is missing or does not match
+  if (!authHeader || !safeCompare(authHeader, `Bearer ${expectedToken}`)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
