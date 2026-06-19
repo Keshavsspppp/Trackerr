@@ -4,22 +4,6 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 // Task 3.1 — Example tests for session behavior
 // Requirements: 1.2, 1.6
 
-// Mock the MongoDB adapter so auth.ts can be imported without a real DB connection
-vi.mock('@next-auth/mongodb-adapter', () => ({
-  MongoDBAdapter: vi.fn(() => ({})),
-}));
-
-// Mock the mongodb MongoClient to avoid real connection attempts.
-// Must be a class (constructor function) since auth.ts uses `new MongoClient(...)`.
-vi.mock('mongodb', () => {
-  class MockMongoClient {
-    connect() {
-      return Promise.resolve(this);
-    }
-  }
-  return { MongoClient: MockMongoClient };
-});
-
 // Mock next-auth/providers/google so we can inspect the provider config
 vi.mock('next-auth/providers/google', () => ({
   default: vi.fn().mockImplementation((opts: { clientId: string; clientSecret: string }) => ({

@@ -45,7 +45,7 @@ export async function POST(req: NextRequest) {
     if (!rateLimitResult.allowed) {
       return NextResponse.json(
         { error: 'Too many requests. Please try again later.' },
-        { 
+        {
           status: 429,
           headers: {
             'Retry-After': String(rateLimitResult.retryAfter ?? 60),
@@ -66,7 +66,7 @@ export async function POST(req: NextRequest) {
     const settings = await UserSettings.findOneAndUpdate(
       { userId },
       { $set: { staleThresholdDays } },
-      { upsert: true, new: true, returnDocument: 'after' }
+      { upsert: true, returnDocument: 'after' }
     );
 
     return NextResponse.json({ staleThresholdDays: settings.staleThresholdDays }, { status: 200 });

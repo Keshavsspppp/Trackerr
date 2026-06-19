@@ -1,7 +1,5 @@
 import GoogleProvider from 'next-auth/providers/google';
-import { MongoDBAdapter } from '@next-auth/mongodb-adapter';
 import type { NextAuthOptions } from 'next-auth';
-import { clientPromise } from './mongodb';
 
 // Fail fast if NEXTAUTH_SECRET is not defined
 if (!process.env.NEXTAUTH_SECRET) {
@@ -9,7 +7,6 @@ if (!process.env.NEXTAUTH_SECRET) {
 }
 
 export const authOptions: NextAuthOptions = {
-  adapter: MongoDBAdapter(clientPromise),
   providers: [
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID ?? '',

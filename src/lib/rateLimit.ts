@@ -57,7 +57,7 @@ export async function checkRateLimit(
       await RateLimit.findOneAndUpdate(
         { key },
         { $set: { count: 1, resetAt } },
-        { upsert: true, new: true }
+        { upsert: true, returnDocument: 'after' }
       );
       return { allowed: true };
     }

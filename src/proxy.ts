@@ -22,7 +22,9 @@ export async function proxy(req: NextRequest) {
 export const config = {
   // Explicitly match all request paths except for static assets, next-auth, and favicons
   matcher: [
-    '/((?!api/auth|_next/static|_next/image|favicon.ico).*)',
+    '/dashboard/:path*',
+    '/api/applications',
+    '/api/applications/:path*',
   ],
 };
 

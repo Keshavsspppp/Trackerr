@@ -101,10 +101,10 @@ Trackerr/
 │   │   ├── VelocityChart.tsx       # Weekly/monthly speed tracking chart
 │   │   └── CSVImporter.tsx         # CSV parser with verification and chunk-based import
 │   ├── lib/                        # dbConnect helper & custom auth wrappers
-│   └── models/                     # Application Mongoose schemas
+│   ├── models/                     # Application Mongoose schemas
+│   └── proxy.ts                    # Next.js authentication/routing protection (proxy convention)
 ├── public/
 │   └── demo-applications.csv       # Pre-built template for importing mock data
-├── proxy.ts                        # Next.js authentication/routing protection (proxy convention)
 ├── vercel.json                     # Cron schedule definition (daily 09:00 UTC)
 ├── .env.example                    # Template for environment variables
 └── vitest.config.ts                # Testing configuration

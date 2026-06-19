@@ -27,27 +27,37 @@ export async function importApplicationsFromCSV(
   };
 
   try {
-    // Read file as text
     const text = await file.text();
-    // Split on \r\n or \n to support Windows line endings correctly
-    const lines = text.split(/\r?\n/).filter(line => line.trim());
+    const rows = parseCSV(text);
 
-    if (lines.length === 0) {
+    if (rows.length === 0) {
       result.errors.push({ row: 0, reason: 'Empty file' });
       return result;
     }
 
     // Parse header row
-    const headers = parseCSVLine(lines[0]);
+    const headers = rows[0];
     const columnMap = mapColumns(headers);
+
+    // Early validation check: fail fast if required header columns are missing
+    if (columnMap.company === -1 || columnMap.role === -1) {
+      const missingFields = [];
+      if (columnMap.company === -1) missingFields.push('company');
+      if (columnMap.role === -1) missingFields.push('role');
+      result.errors.push({
+        row: 1,
+        reason: `Missing required CSV column header(s): ${missingFields.join(', ')}`,
+      });
+      return result;
+    }
 
     const batchData: Array<Record<string, unknown>> = [];
     const rowMapping: number[] = [];
 
     // Process data rows
-    for (let i = 1; i < lines.length; i++) {
+    for (let i = 1; i < rows.length; i++) {
       const rowNumber = i + 1;
-      const values = parseCSVLine(lines[i]);
+      const values = rows[i];
 
       // Validate row has same number of columns as header
       if (values.length !== headers.length) {
@@ -62,10 +72,10 @@ export async function importApplicationsFromCSV(
       // Extract values using column map
       const company = values[columnMap.company]?.trim();
       const role = values[columnMap.role]?.trim();
-      const status = values[columnMap.status]?.trim();
-      const appliedDate = values[columnMap.appliedDate]?.trim();
-      const jobUrl = values[columnMap.jobUrl]?.trim();
-      const notes = values[columnMap.notes]?.trim();
+      const status = columnMap.status !== -1 ? values[columnMap.status]?.trim() : undefined;
+      const appliedDate = columnMap.appliedDate !== -1 ? values[columnMap.appliedDate]?.trim() : undefined;
+      const jobUrl = columnMap.jobUrl !== -1 ? values[columnMap.jobUrl]?.trim() : undefined;
+      const notes = columnMap.notes !== -1 ? values[columnMap.notes]?.trim() : undefined;
 
       // Validate required fields
       if (!company) {
@@ -182,45 +192,64 @@ export async function importApplicationsFromCSV(
 }
 
 /**
- * Parses a single CSV line, handling quoted fields with commas
+ * Parses the entire CSV file content character-by-character.
+ * Correctly handles commas, newlines, and escaped quotes inside double quotes.
  */
-function parseCSVLine(line: string): string[] {
-  const result: string[] = [];
+export function parseCSV(text: string): string[][] {
+  const result: string[][] = [];
+  let row: string[] = [];
   let current = '';
   let inQuotes = false;
 
-  for (let i = 0; i < line.length; i++) {
-    const char = line[i];
-    const nextChar = line[i + 1];
+  for (let i = 0; i < text.length; i++) {
+    const char = text[i];
+    const nextChar = text[i + 1];
 
     if (char === '"') {
       if (inQuotes && nextChar === '"') {
-        // Escaped quote
+        // Escaped quote: "" -> "
         current += '"';
-        i++; // Skip next quote
+        i++; // Skip the next quote
       } else {
         // Toggle quote state
         inQuotes = !inQuotes;
       }
     } else if (char === ',' && !inQuotes) {
       // End of field
-      result.push(current);
+      row.push(current);
+      current = '';
+    } else if ((char === '\r' || char === '\n') && !inQuotes) {
+      // End of row
+      if (char === '\r' && nextChar === '\n') {
+        i++; // Skip the '\n'
+      }
+      row.push(current);
+      // Only push non-empty rows
+      if (row.length > 1 || row[0] !== '') {
+        result.push(row);
+      }
+      row = [];
       current = '';
     } else {
       current += char;
     }
   }
 
-  // Add last field
-  result.push(current);
+  // Add the final field and row if any leftovers
+  if (row.length > 0 || current !== '') {
+    row.push(current);
+    if (row.length > 1 || row[0] !== '') {
+      result.push(row);
+    }
+  }
 
   return result;
 }
 
 /**
- * Maps CSV columns to expected field names
+ * Maps CSV columns to expected field names, supporting common aliases
  */
-function mapColumns(headers: string[]): Record<string, number> {
+export function mapColumns(headers: string[]): Record<string, number> {
   const map: Record<string, number> = {
     company: -1,
     role: -1,
@@ -230,14 +259,33 @@ function mapColumns(headers: string[]): Record<string, number> {
     notes: -1,
   };
 
-  headers.forEach((header, index) => {
-    const normalized = header.toLowerCase().trim();
+  const normalizedHeaders = headers.map(h => h.toLowerCase().replace(/[\s\-_]/g, ''));
+
+  const companyAliases = ['company', 'employer', 'organization', 'organisation', 'companyname'];
+  const roleAliases = ['role', 'position', 'jobtitle', 'title', 'job'];
+  const statusAliases = ['status', 'stage', 'state', 'applicationstatus'];
+  const appliedDateAliases = ['applieddate', 'dateapplied', 'date'];
+  const jobUrlAliases = ['joburl', 'url', 'link', 'joblink', 'posting', 'postingurl'];
+  const notesAliases = ['notes', 'note', 'comments', 'comment', 'description', 'details'];
+
+  // 1. First pass: exact matches after normalization
+  normalizedHeaders.forEach((normalized, index) => {
     if (normalized === 'company') map.company = index;
     else if (normalized === 'role') map.role = index;
     else if (normalized === 'status') map.status = index;
     else if (normalized === 'applieddate') map.appliedDate = index;
     else if (normalized === 'joburl') map.jobUrl = index;
     else if (normalized === 'notes') map.notes = index;
+  });
+
+  // 2. Second pass: fallback alias matches
+  normalizedHeaders.forEach((normalized, index) => {
+    if (map.company === -1 && companyAliases.includes(normalized)) map.company = index;
+    if (map.role === -1 && roleAliases.includes(normalized)) map.role = index;
+    if (map.status === -1 && statusAliases.includes(normalized)) map.status = index;
+    if (map.appliedDate === -1 && appliedDateAliases.includes(normalized)) map.appliedDate = index;
+    if (map.jobUrl === -1 && jobUrlAliases.includes(normalized)) map.jobUrl = index;
+    if (map.notes === -1 && notesAliases.includes(normalized)) map.notes = index;
   });
 
   return map;

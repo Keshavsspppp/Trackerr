@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo, useRef } from "react";
+import { useState, useEffect, useMemo, useRef, Fragment } from "react";
 import { useRouter } from "next/navigation";
 import { useSession, signOut } from "next-auth/react";
 import {
@@ -42,17 +42,33 @@ const VelocityChart = dynamic(() => import("@/src/components/VelocityChart"), {
 });
 
 interface DashboardClientProps {
-  applications: IApplication[];
-  stats: IApplicationStats;
+  applications?: IApplication[];
+  stats?: IApplicationStats;
   isDemo?: boolean;
+  errorMsg?: string;
 }
 
 type ApplicationStatus = "Applied" | "Interview" | "Offer" | "Rejected";
 
+const defaultStats: IApplicationStats = {
+  total: 0,
+  byStatus: { Applied: 0, Interview: 0, Offer: 0, Rejected: 0 },
+  interviewRate: 0,
+  trends: {
+    totalDelta: 0,
+    appliedDelta: 0,
+    interviewDelta: 0,
+    offerDelta: 0,
+    rejectedDelta: 0,
+    interviewRateDelta: 0,
+  },
+};
+
 export default function DashboardClient({
-  applications,
-  stats: initialStats,
+  applications = [],
+  stats: initialStats = defaultStats,
   isDemo = false,
+  errorMsg,
 }: DashboardClientProps) {
   const router = useRouter();
   const { data: session } = useSession();
@@ -962,7 +978,55 @@ export default function DashboardClient({
             margin: "0 auto",
           }}
         >
-          {isDemo && (
+          {errorMsg ? (
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                justifyContent: "center",
+                padding: "64px 32px",
+                background: "var(--color-surface)",
+                border: "1px solid var(--color-border)",
+                borderRadius: "12px",
+                boxShadow: "var(--shadow-card)",
+                textAlign: "center",
+                gap: "20px",
+                maxWidth: "600px",
+                margin: "40px auto 0",
+              }}
+            >
+              <div
+                style={{
+                  width: "56px",
+                  height: "56px",
+                  borderRadius: "50%",
+                  backgroundColor: "rgba(239, 68, 68, 0.1)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  color: "rgb(239, 68, 68)",
+                }}
+              >
+                <AlertTriangle size={28} />
+              </div>
+              <h3 style={{ fontSize: "20px", fontWeight: 700, color: "var(--color-text-primary)", margin: 0 }}>
+                Failed to Load Dashboard Data
+              </h3>
+              <p style={{ color: "var(--color-text-secondary)", fontSize: "14px", lineHeight: 1.5, margin: "0 0 8px", maxWidth: "440px" }}>
+                {errorMsg}
+              </p>
+              <button
+                onClick={() => router.refresh()}
+                className="btn-primary"
+                style={{ height: "40px", padding: "0 24px" }}
+              >
+                Try Again
+              </button>
+            </div>
+          ) : (
+            <Fragment>
+              {isDemo && (
             <div className="demo-banner">
               <span>
                 <strong>Demo Sandbox Mode:</strong> Changes are temporary — data resets on refresh. Sign up free to save your own applications permanently.
@@ -1213,7 +1277,7 @@ export default function DashboardClient({
               </div>
             </div>
           ) : (
-            <>
+            <Fragment>
               {/* Collapsible Analytics Section — only on Dashboard view */}
               {view === "dashboard" && (
                 <section aria-labelledby="analytics-heading" style={{ marginBottom: "28px" }}>
@@ -1411,9 +1475,11 @@ export default function DashboardClient({
                   </div>
                 )}
               </section>
-            </>
+            </Fragment>
           )}
-        </main>
+        </Fragment>
+      )}
+    </main>
       </div>
 
       {/* ── Slide-over panel ── */}
