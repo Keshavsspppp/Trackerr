@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useSession, signOut } from "next-auth/react";
 import {
@@ -10,7 +10,12 @@ import {
   Menu,
   Plus,
   Download,
-  GraduationCap
+  GraduationCap,
+  ChevronDown,
+  ChevronRight,
+  Sun,
+  Moon,
+  Monitor
 } from "lucide-react";
 import StatsCards from "@/src/components/StatsCards";
 import StatusFilter from "@/src/components/StatusFilter";
@@ -37,13 +42,15 @@ const VelocityChart = dynamic(() => import("@/src/components/VelocityChart"), {
 interface DashboardClientProps {
   applications: IApplication[];
   stats: IApplicationStats;
+  isDemo?: boolean;
 }
 
 type ApplicationStatus = "Applied" | "Interview" | "Offer" | "Rejected";
 
 export default function DashboardClient({
   applications,
-  stats,
+  stats: initialStats,
+  isDemo = false,
 }: DashboardClientProps) {
   const router = useRouter();
   const { data: session } = useSession();
@@ -60,6 +67,9 @@ export default function DashboardClient({
 
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [showShortcutsModal, setShowShortcutsModal] = useState(false);
+  const [analyticsOpen, setAnalyticsOpen] = useState(false); // Collapsed by default
+  const [theme, setTheme] = useState<'light' | 'dark' | 'system'>('system');
+  const [demoApps, setDemoApps] = useState<IApplication[]>([]);
 
   // Load saved view mode and sidebar configuration from localStorage on mount
   useEffect(() => {
@@ -70,6 +80,87 @@ export default function DashboardClient({
     const savedSidebar = localStorage.getItem('trackerr_sidebar_open');
     if (savedSidebar !== null) {
       setSidebarOpen(savedSidebar === 'true');
+    }
+    const savedAnalytics = localStorage.getItem('trackerr_analytics_open');
+    if (savedAnalytics !== null) {
+      setAnalyticsOpen(savedAnalytics === 'true');
+    }
+    const savedTheme = localStorage.getItem('trackerr_theme') as 'light' | 'dark' | 'system' || 'system';
+    setTheme(savedTheme);
+  }, []);
+
+  useEffect(() => {
+    if (theme === 'system') {
+      document.documentElement.removeAttribute('data-theme');
+    } else {
+      document.documentElement.setAttribute('data-theme', theme);
+    }
+    localStorage.setItem('trackerr_theme', theme);
+  }, [theme]);
+
+  function toggleTheme() {
+    setTheme((prev) => {
+      if (prev === 'system') return 'light';
+      if (prev === 'light') return 'dark';
+      return 'system';
+    });
+  }
+
+  useEffect(() => {
+    if (isDemo) {
+      setDemoApps(applications);
+    }
+  }, [applications, isDemo]);
+
+  const stats = useMemo(() => {
+    if (!isDemo) return initialStats;
+    const byStatus = {
+      Applied: 0,
+      Interview: 0,
+      Offer: 0,
+      Rejected: 0,
+    };
+    for (const app of demoApps) {
+      const s = app.status;
+      if (s in byStatus) {
+        byStatus[s] += 1;
+      }
+    }
+    const total = demoApps.length;
+    const interviewRate = total === 0 ? 0 : (byStatus.Interview + byStatus.Offer) / total;
+    return {
+      total,
+      byStatus,
+      interviewRate,
+      trends: initialStats.trends,
+    };
+  }, [demoApps, initialStats, isDemo]);
+
+  function handleDemoStatusChange(id: string, newStatus: any) {
+    setDemoApps((prev) =>
+      prev.map((app) => (app._id === id ? { ...app, status: newStatus, lastUpdated: new Date().toISOString() } : app))
+    );
+    showToast(`[Demo Sandbox] Moved internship to ${newStatus}`, "success");
+  }
+
+  function handleDemoDelete(id: string) {
+    setDemoApps((prev) => prev.filter((app) => app._id !== id));
+    showToast("[Demo Sandbox] Internship deleted permanently", "success");
+  }
+
+  // Load saved view mode and sidebar configuration from localStorage on mount
+  useEffect(() => {
+    const savedView = localStorage.getItem('trackerr_view_mode');
+    if (savedView === 'table' || savedView === 'kanban') {
+      setViewMode(savedView);
+    }
+    const savedSidebar = localStorage.getItem('trackerr_sidebar_open');
+    if (savedSidebar !== null) {
+      setSidebarOpen(savedSidebar === 'true');
+    }
+    const savedAnalytics = localStorage.getItem('trackerr_analytics_open');
+    if (savedAnalytics !== null) {
+      setAnalyticsOpen(savedAnalytics === 'true');
     }
   }, []);
 
@@ -141,10 +232,26 @@ export default function DashboardClient({
     router.refresh();
   }
 
-  function handleCreated() {
+  function handleCreated(newApp?: IApplication) {
     setSlideOverOpen(false);
     setEditingApplication(undefined);
-    handleRefresh();
+    if (isDemo && newApp) {
+      setDemoApps((prev) => [newApp, ...prev]);
+    } else {
+      handleRefresh();
+    }
+  }
+
+  function handleUpdated(updatedApp?: IApplication) {
+    setSlideOverOpen(false);
+    setEditingApplication(undefined);
+    if (isDemo && updatedApp) {
+      setDemoApps((prev) =>
+        prev.map((app) => (app._id === updatedApp._id ? updatedApp : app))
+      );
+    } else {
+      handleRefresh();
+    }
   }
 
   function handleExportCSV() {
@@ -154,10 +261,12 @@ export default function DashboardClient({
 
   const userId = session?.user ? (session.user as { id?: string }).id || '' : '';
 
+  const baseApps = isDemo ? demoApps : applications;
+
   const filteredApplications =
     selectedStatus === undefined
-      ? applications
-      : applications.filter((app) => app.status === selectedStatus);
+      ? baseApps
+      : baseApps.filter((app) => app.status === selectedStatus);
 
   const userName =
     session?.user?.name ?? session?.user?.email ?? "User";
@@ -258,53 +367,86 @@ export default function DashboardClient({
             style={{
               display: "flex",
               alignItems: "center",
-              gap: "10px",
+              justifyContent: "space-between",
               padding: "8px 4px",
               marginBottom: "8px",
+              gap: "8px",
             }}
           >
-            {userImage ? (
-              /* eslint-disable-next-line @next/next/no-img-element */
-              <img
-                src={userImage}
-                alt={userName}
-                width={32}
-                height={32}
-                style={{ borderRadius: "50%", flexShrink: 0 }}
-              />
-            ) : (
-              <div
-                aria-hidden="true"
+            <div style={{ display: "flex", alignItems: "center", gap: "10px", overflow: "hidden" }}>
+              {userImage ? (
+                /* eslint-disable-next-line @next/next/no-img-element */
+                <img
+                  src={userImage}
+                  alt={userName}
+                  width={32}
+                  height={32}
+                  style={{ borderRadius: "50%", flexShrink: 0 }}
+                />
+              ) : (
+                <div
+                  aria-hidden="true"
+                  style={{
+                    width: 32,
+                    height: 32,
+                    borderRadius: "50%",
+                    background: "var(--color-accent)",
+                    color: "#fff",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    fontSize: "13px",
+                    fontWeight: 700,
+                    flexShrink: 0,
+                  }}
+                >
+                  {userInitial}
+                </div>
+              )}
+              <span
                 style={{
-                  width: 32,
-                  height: 32,
-                  borderRadius: "50%",
-                  background: "var(--color-accent)",
-                  color: "#fff",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
                   fontSize: "13px",
-                  fontWeight: 700,
-                  flexShrink: 0,
+                  fontWeight: 500,
+                  color: "var(--color-text-primary)",
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  whiteSpace: "nowrap",
+                  maxWidth: "80px",
                 }}
               >
-                {userInitial}
-              </div>
-            )}
-            <span
+                {userName}
+              </span>
+            </div>
+
+            {/* Theme Toggle Button */}
+            <button
+              onClick={toggleTheme}
+              aria-label={`Toggle theme (currently ${theme})`}
+              title={`Switch theme (currently ${theme})`}
               style={{
-                fontSize: "13px",
-                fontWeight: 500,
-                color: "var(--color-text-primary)",
-                overflow: "hidden",
-                textOverflow: "ellipsis",
-                whiteSpace: "nowrap",
-                maxWidth: "140px",
+                background: "none",
+                border: "1px solid var(--color-border)",
+                borderRadius: "6px",
+                padding: "6px",
+                cursor: "pointer",
+                color: "var(--color-text-secondary)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                flexShrink: 0,
+                transition: "background 150ms ease",
               }}
+              onMouseEnter={(e) => e.currentTarget.style.background = "var(--color-sidebar-hover)"}
+              onMouseLeave={(e) => e.currentTarget.style.background = "none"}
             >
-              {userName}
-            </span>
+              {theme === "light" ? (
+                <Sun size={14} />
+              ) : theme === "dark" ? (
+                <Moon size={14} />
+              ) : (
+                <Monitor size={14} />
+              )}
+            </button>
           </div>
 
           {/* Sign out button */}
@@ -379,21 +521,8 @@ export default function DashboardClient({
               setSlideOverOpen(true);
             }}
             aria-label="Add new application"
-            className="hover-btn-accent"
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "6px",
-              height: "36px",
-              padding: "0 14px",
-              background: "var(--color-accent)",
-              color: "#FFFFFF",
-              border: "none",
-              borderRadius: "8px",
-              fontSize: "13px",
-              fontWeight: 600,
-              cursor: "pointer",
-            }}
+            className="btn-primary"
+            style={{ height: "36px", padding: "0 14px", fontSize: "13px" }}
           >
             <Plus size={16} /> Add
           </button>
@@ -437,7 +566,7 @@ export default function DashboardClient({
               >
                 <img src="/logo.png" alt="Trackerr Logo" width="28" height="28" style={{ borderRadius: "50%" }} />
                 <span
-                  style={{
+                  style={{  
                     fontSize: "20px",
                     fontWeight: 700,
                     color: "var(--color-text-primary)",
@@ -490,6 +619,20 @@ export default function DashboardClient({
             width: "100%",
           }}
         >
+          {isDemo && (
+            <div className="demo-banner">
+              <span>
+                <strong>Demo Sandbox Mode:</strong> You are playing with mock data in-memory. Sign in to save your own applications permanently.
+              </span>
+              <button
+                onClick={() => router.push("/")}
+                className="btn-primary"
+                style={{ height: "28px", padding: "0 12px", fontSize: "12px", borderRadius: "4px" }}
+              >
+                Go to Sign In
+              </button>
+            </div>
+          )}
           {/* Desktop page header */}
           <div
             style={{
@@ -523,15 +666,7 @@ export default function DashboardClient({
                   <Menu size={20} />
                 </button>
               )}
-              <h1
-                style={{
-                  margin: 0,
-                  fontSize: "24px",
-                  fontWeight: 700,
-                  color: "var(--color-text-primary)",
-                  letterSpacing: "-0.3px",
-                }}
-              >
+              <h1 className="dashboard-header-title">
                 {view === "dashboard" ? "Dashboard" : "All Internships"}
               </h1>
             </div>
@@ -541,48 +676,19 @@ export default function DashboardClient({
                 setEditingApplication(undefined);
                 setSlideOverOpen(true);
               }}
-              className="desktop-add-btn hover-btn-accent"
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "6px",
-                height: "40px",
-                padding: "0 18px",
-                background: "var(--color-accent)",
-                color: "#FFFFFF",
-                border: "none",
-                borderRadius: "8px",
-                fontSize: "14px",
-                fontWeight: 600,
-                cursor: "pointer",
-              }}
+              className="desktop-add-btn btn-primary"
             >
               <Plus size={16} /> Add Internship
             </button>
           </div>
 
           {applications.length === 0 ? (
-            <div
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                justifyContent: "center",
-                padding: "80px 24px",
-                background: "var(--color-surface)",
-                borderRadius: "16px",
-                border: "1px solid var(--color-border)",
-                textAlign: "center",
-                gap: "16px",
-                boxShadow: "var(--shadow-card)",
-                marginTop: "20px",
-              }}
-            >
+            <div className="card-empty-state">
               <GraduationCap size={64} style={{ color: "var(--color-accent)" }} />
-              <h3 style={{ margin: 0, fontSize: "20px", fontWeight: 700, color: "var(--color-text-primary)" }}>
+              <h3 className="card-empty-state-title">
                 Welcome to Trackerr!
               </h3>
-              <p style={{ margin: 0, fontSize: "15px", color: "var(--color-text-secondary)", maxWidth: "420px", lineHeight: 1.5 }}>
+              <p className="card-empty-state-text">
                 You haven't tracked any applications yet. Add your first internship to begin tracking your recruitment journey!
               </p>
               <button
@@ -590,66 +696,73 @@ export default function DashboardClient({
                   setEditingApplication(undefined);
                   setSlideOverOpen(true);
                 }}
-                className="hover-btn-accent"
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  gap: "8px",
-                  height: "44px",
-                  padding: "0 24px",
-                  background: "var(--color-accent)",
-                  color: "#FFFFFF",
-                  border: "none",
-                  borderRadius: "8px",
-                  fontSize: "14px",
-                  fontWeight: 600,
-                  cursor: "pointer",
-                }}
+                className="btn-primary"
+                style={{ height: "44px", padding: "0 24px" }}
               >
                 <Plus size={16} /> Add your first internship
               </button>
             </div>
           ) : (
             <>
-              {/* Stats Cards — only on Dashboard view */}
+              {/* Collapsible Analytics Section — only on Dashboard view */}
               {view === "dashboard" && (
-                <section aria-labelledby="stats-heading" style={{ marginBottom: "28px" }}>
-                  <h2
-                    id="stats-heading"
+                <section aria-labelledby="analytics-heading" style={{ marginBottom: "28px" }}>
+                  <div
                     style={{
-                      margin: "0 0 14px",
-                      fontSize: "13px",
-                      fontWeight: 600,
-                      color: "var(--color-text-secondary)",
-                      textTransform: "uppercase",
-                      letterSpacing: "0.06em",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      marginBottom: "14px",
+                      cursor: "pointer",
+                      userSelect: "none",
+                      padding: "8px 12px",
+                      background: "var(--color-surface)",
+                      borderRadius: "8px",
+                      border: "1px solid var(--color-border)",
+                    }}
+                    onClick={() => {
+                      const next = !analyticsOpen;
+                      setAnalyticsOpen(next);
+                      localStorage.setItem('trackerr_analytics_open', String(next));
                     }}
                   >
-                    Overview
-                  </h2>
-                  <StatsCards stats={stats} />
-                </section>
-              )}
-
-              {/* Analytics Charts — only on Dashboard view */}
-              {view === "dashboard" && (
-                <>
-                  <section style={{ marginBottom: "28px" }}>
-                    <FunnelChart
-                      stats={{
-                        applied: stats.byStatus.Applied,
-                        interview: stats.byStatus.Interview,
-                        offer: stats.byStatus.Offer,
-                        rejected: stats.byStatus.Rejected,
+                    <h2
+                      id="analytics-heading"
+                      style={{
+                        margin: 0,
+                        fontSize: "13px",
+                        fontWeight: 600,
+                        color: "var(--color-text-secondary)",
+                        textTransform: "uppercase",
+                        letterSpacing: "0.06em",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "6px",
                       }}
-                    />
-                  </section>
+                    >
+                      {analyticsOpen ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+                      Analytics & Overview
+                    </h2>
+                    <span style={{ fontSize: "12px", color: "var(--color-text-secondary)", fontWeight: 500 }}>
+                      {analyticsOpen ? "Hide" : "Show"}
+                    </span>
+                  </div>
 
-                  <section style={{ marginBottom: "28px" }}>
-                    <VelocityChart applications={applications} />
-                  </section>
-                </>
+                  {analyticsOpen && (
+                    <div style={{ display: "flex", flexDirection: "column", gap: "28px" }}>
+                      <StatsCards stats={stats} />
+                      <FunnelChart
+                        stats={{
+                          applied: stats.byStatus.Applied,
+                          interview: stats.byStatus.Interview,
+                          offer: stats.byStatus.Offer,
+                          rejected: stats.byStatus.Rejected,
+                        }}
+                      />
+                       <VelocityChart applications={isDemo ? demoApps : applications} />
+                    </div>
+                  )}
+                </section>
               )}
 
               {/* Filter pills + table section */}
@@ -717,20 +830,7 @@ export default function DashboardClient({
                     <ViewToggle currentView={viewMode} onViewChange={handleViewChange} />
                     <button
                       onClick={handleExportCSV}
-                      className="hover-btn-neutral"
-                      style={{
-                        padding: "8px 16px",
-                        backgroundColor: "var(--color-surface)",
-                        color: "var(--color-text-secondary)",
-                        border: "1px solid var(--color-border)",
-                        borderRadius: "8px",
-                        fontSize: "14px",
-                        fontWeight: 600,
-                        cursor: "pointer",
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "6px",
-                      }}
+                      className="btn-secondary"
                     >
                       <Download size={16} /> Export CSV
                     </button>
@@ -751,22 +851,27 @@ export default function DashboardClient({
 
                 {/* Application table or Kanban board */}
                 {viewMode === 'table' ? (
-                  <ApplicationList
+                   <ApplicationList
                     applications={filteredApplications}
                     onRefresh={handleRefresh}
                     onEdit={(app) => {
                       setEditingApplication(app);
                       setSlideOverOpen(true);
                     }}
+                    isDemo={isDemo}
+                    onDemoStatusChange={handleDemoStatusChange}
+                    onDemoDelete={handleDemoDelete}
                   />
                 ) : (
-                  <KanbanBoard
+                   <KanbanBoard
                     applications={filteredApplications}
                     onRefresh={handleRefresh}
                     onEdit={(app) => {
                       setEditingApplication(app);
                       setSlideOverOpen(true);
                     }}
+                    isDemo={isDemo}
+                    onDemoStatusChange={handleDemoStatusChange}
                   />
                 )}
               </section>
@@ -784,19 +889,16 @@ export default function DashboardClient({
         }}
         title={editingApplication ? "← Edit Internship" : "← Add Internship"}
       >
-        <ApplicationForm
+         <ApplicationForm
           application={editingApplication}
           onCancel={() => {
             setSlideOverOpen(false);
             setEditingApplication(undefined);
           }}
           onCreated={handleCreated}
-          onUpdated={() => {
-            setSlideOverOpen(false);
-            setEditingApplication(undefined);
-            handleRefresh();
-          }}
+          onUpdated={handleUpdated}
           showToast={showToast}
+          isDemo={isDemo}
         />
       </SlideOver>
 

@@ -11,6 +11,8 @@ interface KanbanBoardProps {
   applications: IApplication[];
   onRefresh?: () => void;
   onEdit?: (application: IApplication) => void;
+  isDemo?: boolean;
+  onDemoStatusChange?: (id: string, newStatus: Status) => void;
 }
 
 type Status = 'Applied' | 'Interview' | 'Offer' | 'Rejected';
@@ -46,7 +48,13 @@ function isStale(app: IApplication): boolean {
   return diff > 7 * 86400000;
 }
 
-export default function KanbanBoard({ applications, onRefresh, onEdit }: KanbanBoardProps) {
+export default function KanbanBoard({
+  applications,
+  onRefresh,
+  onEdit,
+  isDemo = false,
+  onDemoStatusChange
+}: KanbanBoardProps) {
   const [draggedId, setDraggedId] = useState<string | null>(null);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -65,6 +73,13 @@ export default function KanbanBoard({ applications, onRefresh, onEdit }: KanbanB
   async function handleStatusChange(id: string, newStatus: Status) {
     setUpdatingId(id);
     setError(null);
+    if (isDemo) {
+      setTimeout(() => {
+        onDemoStatusChange?.(id, newStatus);
+        setUpdatingId(null);
+      }, 300);
+      return;
+    }
     try {
       const res = await fetch(`/api/applications/${id}`, {
         method: 'PATCH',
@@ -293,9 +308,9 @@ export default function KanbanBoard({ applications, onRefresh, onEdit }: KanbanB
                       </p>
                     )}
 
-                    {/* Mobile Only Status Select */}
+                    {/* Status Select (Keyboard & Touch Accessibility) */}
                     <div
-                      className="mobile-only-status-select"
+                      className="card-status-select"
                       style={{
                         marginTop: "8px",
                       }}

@@ -5,10 +5,11 @@ import type { IApplication } from './ApplicationList';
 
 interface ApplicationFormProps {
   application?: IApplication;
-  onCreated?: () => void;
-  onUpdated?: () => void;
+  onCreated?: (newApp?: IApplication) => void;
+  onUpdated?: (updatedApp?: IApplication) => void;
   onCancel?: () => void;
   showToast?: (message: string, type: 'success' | 'error') => void;
+  isDemo?: boolean;
 }
 
 const VALID_STATUSES = ['Applied', 'Interview', 'Offer', 'Rejected'] as const;
@@ -64,6 +65,7 @@ export default function ApplicationForm({
   onUpdated,
   onCancel,
   showToast,
+  isDemo = false,
 }: ApplicationFormProps) {
   const [fields, setFields] = useState<FormFields>(initialFields);
   const [errors, setErrors] = useState<FormErrors>({});
@@ -152,6 +154,35 @@ export default function ApplicationForm({
     setSubmitting(true);
     setErrors({});
 
+    if (isDemo) {
+      const demoResponse: IApplication = {
+        _id: application?._id || `demo-${Math.random().toString(36).substr(2, 9)}`,
+        userId: 'demo',
+        company: fields.company.trim(),
+        role: fields.role.trim(),
+        status: fields.status as any,
+        appliedDate: fields.appliedDate ? new Date(fields.appliedDate).toISOString() : undefined,
+        jobUrl: fields.jobUrl.trim() || undefined,
+        notes: fields.notes.trim() || undefined,
+        source: application?.source || 'manual',
+        lastUpdated: new Date().toISOString(),
+        createdAt: application?.createdAt || new Date().toISOString(),
+      };
+
+      setTimeout(() => {
+        setSubmitting(false);
+        if (application) {
+          showToast?.('[Demo Sandbox] Internship updated ✓', 'success');
+          onUpdated?.(demoResponse);
+        } else {
+          setFields(initialFields);
+          showToast?.('[Demo Sandbox] Internship added ✓', 'success');
+          onCreated?.(demoResponse);
+        }
+      }, 300);
+      return;
+    }
+
     try {
       const body: Record<string, string> = {
         company: fields.company.trim(),
@@ -183,7 +214,7 @@ export default function ApplicationForm({
 
       if (application) {
         showToast?.('Internship updated ✓', 'success');
-        (onUpdated || onCreated)?.();
+        onUpdated?.();
       } else {
         setFields(initialFields);
         showToast?.('Internship added ✓', 'success');

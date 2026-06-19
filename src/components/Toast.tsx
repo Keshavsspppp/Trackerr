@@ -10,15 +10,21 @@ import React, {
 
 export type ToastType = 'success' | 'error';
 
+export interface ToastAction {
+  label: string;
+  onClick: () => void;
+}
+
 interface Toast {
   id: number;
   message: string;
   type: ToastType;
   exiting: boolean;
+  action?: ToastAction;
 }
 
 interface ToastContextValue {
-  showToast: (message: string, type: ToastType) => void;
+  showToast: (message: string, type: ToastType, action?: ToastAction) => void;
 }
 
 const ToastContext = createContext<ToastContextValue | null>(null);
@@ -41,18 +47,19 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const showToast = useCallback(
-    (message: string, type: ToastType) => {
+    (message: string, type: ToastType, action?: ToastAction) => {
       const id = ++nextId;
       setToasts((prev) => [
         ...prev.slice(-2), // keep at most 3 visible (add to end, trim oldest)
-        { id, message, type, exiting: false },
+        { id, message, type, exiting: false, action },
       ]);
 
-      // Auto-dismiss after 3 s
+      // Auto-dismiss after 5s if there is an action, else 3s
+      const duration = action ? 5000 : 3000;
       const timer = setTimeout(() => {
         removeToast(id);
         timers.current.delete(id);
-      }, 3000);
+      }, duration);
       timers.current.set(id, timer);
     },
     [removeToast]
@@ -122,6 +129,30 @@ function ToastItem({ toast, onDismiss }: ToastItemProps) {
       style={style}
     >
       <span style={{ flex: 1 }}>{toast.message}</span>
+      {toast.action && (
+        <button
+          onClick={() => {
+            toast.action?.onClick();
+            onDismiss();
+          }}
+          style={{
+            background: 'var(--color-surface, #FFFFFF)',
+            color: 'var(--color-text-primary, #111827)',
+            border: '1px solid var(--color-border, #E5E7EB)',
+            borderRadius: '4px',
+            padding: '4px 8px',
+            fontSize: '12px',
+            fontWeight: 600,
+            cursor: 'pointer',
+            marginLeft: '8px',
+            marginRight: '4px',
+            boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
+            pointerEvents: 'all',
+          }}
+        >
+          {toast.action.label}
+        </button>
+      )}
       <button
         onClick={onDismiss}
         aria-label="Dismiss notification"

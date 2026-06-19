@@ -165,7 +165,7 @@ export default function Home() {
           fontWeight: 600,
           cursor: 'pointer',
           transition: 'background 150ms ease',
-          marginBottom: '24px',
+          marginBottom: '12px',
           boxShadow: '0 4px 6px -1px rgba(59, 130, 246, 0.2)',
         }}
         onMouseEnter={(e) => {
@@ -214,6 +214,39 @@ export default function Home() {
           </svg>
         </span>
         Continue with Google
+      </button>
+
+      {/* Try Demo Sandbox button */}
+      <button
+        onClick={() => window.location.href = '/demo'}
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: '10px',
+          width: '100%',
+          maxWidth: '340px',
+          height: '48px',
+          background: 'transparent',
+          color: '#374151',
+          border: '1px solid #D1D5DB',
+          borderRadius: '8px',
+          fontSize: '15px',
+          fontWeight: 600,
+          cursor: 'pointer',
+          transition: 'all 150ms ease',
+          marginBottom: '24px',
+        }}
+        onMouseEnter={(e) => {
+          (e.currentTarget as HTMLButtonElement).style.background = '#F3F4F6';
+          (e.currentTarget as HTMLButtonElement).style.borderColor = '#9CA3AF';
+        }}
+        onMouseLeave={(e) => {
+          (e.currentTarget as HTMLButtonElement).style.background = 'transparent';
+          (e.currentTarget as HTMLButtonElement).style.borderColor = '#D1D5DB';
+        }}
+      >
+        Try Demo Sandbox
       </button>
 
       {/* Trust Badges */}

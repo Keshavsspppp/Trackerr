@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Edit3, Trash2, Search, X, AlertTriangle } from "lucide-react";
 import SourceBadge from "./SourceBadge";
 import { formatStaticDate } from "@/src/lib/applicationUtils";
+import { useToast } from "@/src/components/Toast";
 
 export interface IApplication {
   _id: string;
@@ -23,6 +24,9 @@ interface ApplicationListProps {
   applications: IApplication[];
   onRefresh?: () => void;
   onEdit?: (application: IApplication) => void;
+  isDemo?: boolean;
+  onDemoStatusChange?: (id: string, newStatus: IApplication["status"]) => void;
+  onDemoDelete?: (id: string) => void;
 }
 
 const STATUS_OPTIONS: IApplication["status"][] = [
@@ -112,12 +116,24 @@ export default function ApplicationList({
   applications,
   onRefresh,
   onEdit,
+  isDemo = false,
+  onDemoStatusChange,
+  onDemoDelete,
 }: ApplicationListProps) {
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
-  const [deleteTarget, setDeleteTarget] = useState<IApplication | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isMounted, setIsMounted] = useState(false);
+  const [pendingDeleteIds, setPendingDeleteIds] = useState<string[]>([]);
+  const deleteTimeouts = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
+  const { showToast } = useToast();
+
+  useEffect(() => {
+    return () => {
+      // Clear any pending timeouts on unmount
+      Object.values(deleteTimeouts.current).forEach(clearTimeout);
+    };
+  }, []);
 
   // Search & Sort state
   const [searchQuery, setSearchQuery] = useState("");
@@ -134,6 +150,13 @@ export default function ApplicationList({
   ) {
     setUpdatingId(id);
     setError(null);
+    if (isDemo) {
+      setTimeout(() => {
+        onDemoStatusChange?.(id, newStatus);
+        setUpdatingId(null);
+      }, 300);
+      return;
+    }
     try {
       const res = await fetch(`/api/applications/${id}`, {
         method: "PATCH",
@@ -173,6 +196,38 @@ export default function ApplicationList({
     }
   }
 
+  function triggerDelete(app: IApplication) {
+    const id = app._id;
+    // Add to pending delete list immediately
+    setPendingDeleteIds((prev) => [...prev, id]);
+
+    // Show undo toast
+    showToast(`Deleted internship at ${app.company}`, "success", {
+      label: "Undo",
+      onClick: () => {
+        // Cancel deletion
+        if (deleteTimeouts.current[id]) {
+          clearTimeout(deleteTimeouts.current[id]);
+          delete deleteTimeouts.current[id];
+        }
+        setPendingDeleteIds((prev) => prev.filter((itemId) => itemId !== id));
+      },
+    });
+
+    // Schedule the actual delete call in 5 seconds
+    const timeout = setTimeout(async () => {
+      delete deleteTimeouts.current[id];
+      if (isDemo) {
+        onDemoDelete?.(id);
+      } else {
+        await handleDelete(id);
+      }
+      setPendingDeleteIds((prev) => prev.filter((itemId) => itemId !== id));
+    }, 5000);
+
+    deleteTimeouts.current[id] = timeout;
+  }
+
   // Filter & Sort logic
   const filtered = applications.filter((app) => {
     const query = searchQuery.toLowerCase().trim();
@@ -183,7 +238,9 @@ export default function ApplicationList({
     );
   });
 
-  const sorted = [...filtered].sort((a, b) => {
+  const visible = filtered.filter(app => !pendingDeleteIds.includes(app._id));
+
+  const sorted = [...visible].sort((a, b) => {
     if (sortBy === "companyAsc") {
       return a.company.localeCompare(b.company);
     }
@@ -253,97 +310,7 @@ export default function ApplicationList({
         </div>
       )}
 
-      {/* Delete Confirmation Modal */}
-      {deleteTarget && (
-        <div
-          className="delete-modal-overlay"
-          onClick={() => setDeleteTarget(null)}
-        >
-          <div
-            className="delete-modal-card"
-            onClick={(e) => e.stopPropagation()}
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              gap: "16px",
-            }}
-          >
-            <div style={{ display: "flex", alignItems: "start", gap: "12px" }}>
-              <AlertTriangle size={24} style={{ color: "var(--color-rejected-dot)", marginTop: "2px", flexShrink: 0 }} />
-              <div>
-                <h3
-                  style={{
-                    margin: 0,
-                    fontSize: "16px",
-                    fontWeight: 600,
-                    color: "var(--color-text-primary)",
-                  }}
-                >
-                  Delete Internship?
-                </h3>
-                <p
-                  style={{
-                    margin: "6px 0 0",
-                    fontSize: "14px",
-                    color: "var(--color-text-secondary)",
-                    lineHeight: 1.5,
-                  }}
-                >
-                  Are you sure you want to delete the internship for{" "}
-                  <strong>{deleteTarget.role}</strong> at{" "}
-                  <strong>{deleteTarget.company}</strong>? This action cannot be undone.
-                </p>
-              </div>
-            </div>
-
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "flex-end",
-                gap: "10px",
-                marginTop: "8px",
-              }}
-            >
-              <button
-                onClick={() => setDeleteTarget(null)}
-                className="hover-btn-neutral"
-                style={{
-                  padding: "8px 16px",
-                  backgroundColor: "var(--color-surface)",
-                  color: "var(--color-text-secondary)",
-                  border: "1px solid var(--color-border)",
-                  borderRadius: "8px",
-                  cursor: "pointer",
-                  fontSize: "14px",
-                  fontWeight: 500,
-                }}
-              >
-                Cancel
-              </button>
-              <button
-                onClick={() => {
-                  const id = deleteTarget._id;
-                  setDeleteTarget(null);
-                  handleDelete(id);
-                }}
-                className="hover-btn-danger"
-                style={{
-                  padding: "8px 16px",
-                  backgroundColor: "#DC2626",
-                  color: "#FFFFFF",
-                  border: "none",
-                  borderRadius: "8px",
-                  cursor: "pointer",
-                  fontSize: "14px",
-                  fontWeight: 500,
-                }}
-              >
-                Delete
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Deletion is handled optimistically with Toast Undo */}
 
       {/* Search & Sort Toolbar */}
       <div
@@ -743,7 +710,7 @@ export default function ApplicationList({
                             <button
                               aria-label={`Delete internship for ${app.role} at ${app.company}`}
                               disabled={deletingId === app._id}
-                              onClick={() => setDeleteTarget(app)}
+                              onClick={() => triggerDelete(app)}
                               className="hover-btn-danger"
                               style={{
                                 padding: "5px 12px",
@@ -984,7 +951,7 @@ export default function ApplicationList({
                     <button
                       aria-label={`Delete internship for ${app.role} at ${app.company}`}
                       disabled={deletingId === app._id}
-                      onClick={() => setDeleteTarget(app)}
+                      onClick={() => triggerDelete(app)}
                       className="hover-btn-danger"
                       style={{
                         flex: 1,

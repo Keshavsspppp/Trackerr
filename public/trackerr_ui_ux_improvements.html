@@ -1,0 +1,478 @@
+
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--font-sans);color:var(--color-text-primary);padding:1rem 0}
+h2.sr-only{position:absolute;width:1px;height:1px;clip:rect(0,0,0,0);overflow:hidden}
+.nav{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:1.5rem}
+.nav-btn{padding:6px 16px;border-radius:var(--border-radius-md);font-size:13px;cursor:pointer;border:0.5px solid var(--color-border-secondary);background:transparent;color:var(--color-text-secondary);transition:all .15s}
+.nav-btn.on{background:var(--color-background-info);color:var(--color-text-info);border-color:transparent;font-weight:500}
+.pane{display:none}.pane.on{display:block}
+.label-row{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+.pill{font-size:11px;font-weight:500;padding:2px 9px;border-radius:99px}
+.pill.before{background:var(--color-background-danger);color:var(--color-text-danger)}
+.pill.after{background:var(--color-background-success);color:var(--color-text-success)}
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:12px;align-items:start}
+.frame{background:var(--color-background-secondary);border-radius:var(--border-radius-lg);padding:14px;border:0.5px solid var(--color-border-tertiary)}
+.frame-label{font-size:11px;font-weight:500;color:var(--color-text-tertiary);text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px}
+.mock{background:var(--color-background-primary);border-radius:var(--border-radius-md);border:0.5px solid var(--color-border-tertiary);overflow:hidden}
+.topbar{background:var(--color-background-primary);border-bottom:0.5px solid var(--color-border-tertiary);padding:9px 14px;display:flex;align-items:center;justify-content:space-between}
+.logo{font-size:13px;font-weight:500;color:var(--color-text-primary)}
+.logo span{color:var(--color-text-info)}
+.avatar{width:26px;height:26px;border-radius:50%;background:var(--color-background-info);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:500;color:var(--color-text-info)}
+.hero-old{padding:32px 14px;text-align:center}
+.hero-old h1{font-size:17px;font-weight:500;margin-bottom:6px}
+.hero-old p{font-size:12px;color:var(--color-text-secondary);margin-bottom:14px}
+.btn-google{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:var(--border-radius-md);border:0.5px solid var(--color-border-secondary);font-size:12px;background:var(--color-background-primary);cursor:pointer;color:var(--color-text-primary);margin-bottom:14px}
+.feat-list{text-align:left;font-size:11px;color:var(--color-text-secondary);line-height:2;margin-bottom:10px;padding-left:4px}
+.hero-new{padding:28px 14px}
+.hero-new h1{font-size:18px;font-weight:500;margin-bottom:4px;line-height:1.3}
+.hero-new .sub{font-size:12px;color:var(--color-text-secondary);margin-bottom:16px}
+.btn-g{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:var(--border-radius-md);background:var(--color-background-info);color:var(--color-text-info);font-size:12px;font-weight:500;cursor:pointer;margin-bottom:16px;border:none}
+.preview-strip{background:var(--color-background-secondary);border-radius:var(--border-radius-md);padding:8px 10px;border:0.5px solid var(--color-border-tertiary);margin-bottom:12px}
+.preview-row{display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:0.5px solid var(--color-border-tertiary)}
+.preview-row:last-child{border-bottom:none}
+.co-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.co-name{font-size:11px;font-weight:500;flex:1;color:var(--color-text-primary)}
+.co-role{font-size:10px;color:var(--color-text-secondary);flex:1}
+.status-badge{font-size:10px;font-weight:500;padding:2px 7px;border-radius:99px}
+.s-applied{background:#E6F1FB;color:#185FA5}
+.s-interview{background:#FAEEDA;color:#854F0B}
+.s-offer{background:#EAF3DE;color:#3B6D11}
+.s-rejected{background:#FCEBEB;color:#A32D2D}
+.trust-row{display:flex;gap:12px;font-size:10px;color:var(--color-text-tertiary)}
+.stat-mini-row{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:12px}
+.stat-mini{background:var(--color-background-secondary);border-radius:6px;padding:8px 6px}
+.stat-mini .n{font-size:16px;font-weight:500;color:var(--color-text-primary)}
+.stat-mini .l{font-size:10px;color:var(--color-text-secondary);margin-top:1px}
+.filter-row{display:flex;gap:4px;margin-bottom:8px;flex-wrap:wrap}
+.ftab{font-size:10px;padding:3px 8px;border-radius:99px;border:0.5px solid var(--color-border-secondary);cursor:pointer;background:transparent;color:var(--color-text-secondary)}
+.ftab.on{background:var(--color-background-info);color:var(--color-text-info);border-color:transparent}
+.app-row{display:flex;align-items:center;gap:8px;padding:7px 10px;border-bottom:0.5px solid var(--color-border-tertiary)}
+.app-row:last-child{border-bottom:none}
+.app-co{font-size:12px;font-weight:500}
+.app-role{font-size:11px;color:var(--color-text-secondary)}
+.app-actions{display:flex;gap:6px;margin-left:auto}
+.act-btn{font-size:10px;padding:2px 7px;border-radius:4px;border:0.5px solid var(--color-border-secondary);cursor:pointer;background:transparent;color:var(--color-text-secondary)}
+.act-btn.del{color:var(--color-text-danger);border-color:var(--color-border-danger)}
+.empty-state{padding:28px 14px;text-align:center}
+.empty-icon{width:44px;height:44px;border-radius:50%;background:var(--color-background-info);display:flex;align-items:center;justify-content:center;font-size:20px;margin:0 auto 10px;color:var(--color-text-info)}
+.empty-title{font-size:13px;font-weight:500;margin-bottom:4px}
+.empty-sub{font-size:11px;color:var(--color-text-secondary);margin-bottom:14px;line-height:1.5}
+.empty-cta{display:inline-flex;align-items:center;gap:5px;padding:7px 14px;border-radius:var(--border-radius-md);background:var(--color-background-info);color:var(--color-text-info);font-size:12px;font-weight:500;border:none;cursor:pointer}
+.modal-bg{min-height:200px;background:rgba(0,0,0,0.35);display:flex;align-items:center;justify-content:center;border-radius:var(--border-radius-md);padding:12px}
+.modal-card{background:var(--color-background-primary);border-radius:var(--border-radius-lg);border:0.5px solid var(--color-border-tertiary);padding:16px;width:100%;max-width:220px}
+.modal-title{font-size:13px;font-weight:500;margin-bottom:4px}
+.modal-sub{font-size:11px;color:var(--color-text-secondary);margin-bottom:12px;line-height:1.5}
+.modal-actions{display:flex;gap:6px;justify-content:flex-end}
+.modal-actions button{font-size:11px;padding:5px 11px;border-radius:6px;cursor:pointer}
+.btn-cancel{background:transparent;border:0.5px solid var(--color-border-secondary);color:var(--color-text-secondary)}
+.btn-del{background:var(--color-background-danger);color:var(--color-text-danger);border:0.5px solid var(--color-border-danger)}
+.toast{display:flex;align-items:center;gap:8px;background:var(--color-background-primary);border:0.5px solid var(--color-border-secondary);border-radius:var(--border-radius-md);padding:8px 12px;margin-top:8px;font-size:11px}
+.toast-undo{color:var(--color-text-info);font-weight:500;cursor:pointer;margin-left:auto}
+.search-bar{display:flex;align-items:center;gap:6px;border:0.5px solid var(--color-border-secondary);border-radius:var(--border-radius-md);padding:6px 9px;margin-bottom:8px;font-size:11px;color:var(--color-text-secondary)}
+.search-bar i{font-size:13px}
+.url-row{display:flex;align-items:center;gap:6px;padding:7px 10px;border-bottom:0.5px solid var(--color-border-tertiary)}
+.favicon{width:16px;height:16px;border-radius:3px;background:var(--color-background-secondary);display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:500;color:var(--color-text-secondary);flex-shrink:0}
+.notes-badge{font-size:9px;padding:1px 5px;border-radius:99px;background:var(--color-background-secondary);color:var(--color-text-tertiary)}
+.url-link{font-size:10px;color:var(--color-text-info)}
+.mobile-bar{display:flex;align-items:center;gap:6px;background:var(--color-background-primary);border-top:0.5px solid var(--color-border-tertiary);padding:8px 14px;justify-content:space-around}
+.mobile-tab{display:flex;flex-direction:column;align-items:center;gap:2px;font-size:9px;color:var(--color-text-secondary)}
+.mobile-tab.on{color:var(--color-text-info)}
+.mobile-tab i{font-size:18px}
+.fab{width:36px;height:36px;border-radius:50%;background:var(--color-background-info);display:flex;align-items:center;justify-content:center;font-size:18px;color:var(--color-text-info);margin-top:-18px}
+.section-gap{margin-bottom:1.5rem}
+.note{font-size:12px;color:var(--color-text-secondary);line-height:1.6;margin-top:10px;padding:10px 12px;background:var(--color-background-secondary);border-radius:var(--border-radius-md)}
+.note strong{font-weight:500;color:var(--color-text-primary)}
+.funnel-row{display:flex;flex-direction:column;gap:4px;padding:10px}
+.funnel-bar{border-radius:4px;height:22px;display:flex;align-items:center;padding-left:8px;font-size:10px;font-weight:500}
+.timeline-item{display:flex;gap:8px;padding:6px 10px;border-bottom:0.5px solid var(--color-border-tertiary)}
+.tl-dot{width:8px;height:8px;border-radius:50%;margin-top:4px;flex-shrink:0}
+.tl-co{font-size:11px;font-weight:500}
+.tl-date{font-size:10px;color:var(--color-text-secondary)}
+.tl-badge{font-size:9px;padding:1px 6px;border-radius:99px;margin-left:auto;align-self:flex-start;margin-top:1px}
+</style>
+
+<h2 class="sr-only">Interactive UI/UX improvement mockups for Trackerr showing before and after states for landing page, dashboard, empty state, delete confirmation, and new features</h2>
+
+<div class="nav">
+  <button class="nav-btn on" onclick="sw('landing')">Landing page</button>
+  <button class="nav-btn" onclick="sw('empty')">Empty state</button>
+  <button class="nav-btn" onclick="sw('dashboard')">Dashboard</button>
+  <button class="nav-btn" onclick="sw('delete')">Delete confirm</button>
+  <button class="nav-btn" onclick="sw('mobile')">Mobile nav</button>
+  <button class="nav-btn" onclick="sw('features')">New features</button>
+</div>
+
+<div id="landing" class="pane on">
+  <div class="two-col">
+    <div class="frame">
+      <div class="frame-label">Before</div>
+      <div class="mock">
+        <div class="hero-old">
+          <div style="font-size:22px;margin-bottom:6px">T.</div>
+          <h1>Track every application.<br>Land the internship.</h1>
+          <p>Track your internship applications in one place</p>
+          <div class="btn-google"><i class="ti ti-brand-google" style="font-size:14px"></i> Sign in with Google</div>
+          <div class="feat-list">
+            🎓 Track all internship applications<br>
+            📈 Dashboard stats & conversion rate<br>
+            📧 Email reminders for stale apps
+          </div>
+          <div style="font-size:10px;color:var(--color-text-tertiary)">Free · No ads · Your data</div>
+        </div>
+      </div>
+      <div class="note"><strong>Problems:</strong> No product preview, no social proof, sign-in ask comes before the user understands the value. Bullet points don't convey what the UI looks like.</div>
+    </div>
+    <div class="frame">
+      <div class="frame-label">After</div>
+      <div class="mock">
+        <div class="hero-new">
+          <div style="font-size:11px;font-weight:500;color:var(--color-text-info);margin-bottom:6px">Free · No ads · Your data</div>
+          <h1>Track every application.<br>Land the internship.</h1>
+          <div class="sub">See exactly where you stand — applied, interviewing, offers. All in one place.</div>
+          <div class="preview-strip">
+            <div class="preview-row">
+              <div class="co-dot" style="background:#185FA5"></div>
+              <div class="co-name">Google</div>
+              <div class="co-role">SWE Intern</div>
+              <span class="status-badge s-interview">Interview</span>
+            </div>
+            <div class="preview-row">
+              <div class="co-dot" style="background:#3B6D11"></div>
+              <div class="co-name">Stripe</div>
+              <div class="co-role">Backend Intern</div>
+              <span class="status-badge s-offer">Offer</span>
+            </div>
+            <div class="preview-row">
+              <div class="co-dot" style="background:#888780"></div>
+              <div class="co-name">Meta</div>
+              <div class="co-role">Product Intern</div>
+              <span class="status-badge s-applied">Applied</span>
+            </div>
+          </div>
+          <div class="btn-g"><i class="ti ti-brand-google" style="font-size:14px"></i> Continue with Google</div>
+          <div class="trust-row">
+            <span><i class="ti ti-lock" style="font-size:11px;vertical-align:-1px"></i> Secure OAuth only</span>
+            <span><i class="ti ti-ad-off" style="font-size:11px;vertical-align:-1px"></i> No ads</span>
+            <span><i class="ti ti-database" style="font-size:11px;vertical-align:-1px"></i> Your data</span>
+          </div>
+        </div>
+      </div>
+      <div class="note"><strong>Improvements:</strong> Live preview of the app above the fold. Trust signals at top. CTA is below the preview so users see value first. Cleaner typography hierarchy.</div>
+    </div>
+  </div>
+</div>
+
+<div id="empty" class="pane">
+  <div class="two-col">
+    <div class="frame">
+      <div class="frame-label">Before — new user sees this</div>
+      <div class="mock">
+        <div class="topbar"><span class="logo">Trackerr<span>.</span></span><div class="avatar">K</div></div>
+        <div class="stat-mini-row" style="padding:10px 10px 0">
+          <div class="stat-mini"><div class="n">0</div><div class="l">Total</div></div>
+          <div class="stat-mini"><div class="n">0</div><div class="l">Interviews</div></div>
+          <div class="stat-mini"><div class="n">0%</div><div class="l">Rate</div></div>
+        </div>
+        <div class="filter-row" style="padding:10px 10px 0">
+          <button class="ftab on">All</button>
+          <button class="ftab">Applied</button>
+          <button class="ftab">Interview</button>
+          <button class="ftab">Offer</button>
+        </div>
+        <div style="padding:10px">
+          <div style="font-size:11px;color:var(--color-text-tertiary);text-align:center;padding:20px 0">No applications yet.</div>
+        </div>
+      </div>
+      <div class="note"><strong>Problem:</strong> "No applications yet" with zero context kills activation. The user has no idea what to do next or what the app actually offers them.</div>
+    </div>
+    <div class="frame">
+      <div class="frame-label">After — first-time user guided</div>
+      <div class="mock">
+        <div class="topbar"><span class="logo">Trackerr<span>.</span></span><div class="avatar">K</div></div>
+        <div class="empty-state">
+          <div class="empty-icon"><i class="ti ti-briefcase" style="font-size:22px"></i></div>
+          <div class="empty-title">Start tracking your applications</div>
+          <div class="empty-sub">Add your first internship application and<br>see your stats update in real time.</div>
+          <button class="empty-cta"><i class="ti ti-plus" style="font-size:14px"></i> Add first application</button>
+          <div style="margin-top:14px;display:flex;flex-direction:column;gap:8px">
+            <div style="display:flex;align-items:center;gap:8px;font-size:11px;color:var(--color-text-secondary)"><i class="ti ti-chart-bar" style="font-size:14px;color:var(--color-text-info)"></i> Track status across all stages</div>
+            <div style="display:flex;align-items:center;gap:8px;font-size:11px;color:var(--color-text-secondary)"><i class="ti ti-bell" style="font-size:14px;color:var(--color-text-info)"></i> Get email reminders for stale apps</div>
+            <div style="display:flex;align-items:center;gap:8px;font-size:11px;color:var(--color-text-secondary)"><i class="ti ti-trending-up" style="font-size:14px;color:var(--color-text-info)"></i> See your conversion funnel</div>
+          </div>
+        </div>
+      </div>
+      <div class="note"><strong>Improvements:</strong> Clear CTA front and centre. Three mini feature hints remind the user why they signed up. The icon + title makes the page feel alive, not broken.</div>
+    </div>
+  </div>
+</div>
+
+<div id="dashboard" class="pane">
+  <div class="two-col">
+    <div class="frame">
+      <div class="frame-label">Before</div>
+      <div class="mock">
+        <div class="topbar"><span class="logo">Trackerr<span>.</span></span><div class="avatar">K</div></div>
+        <div class="stat-mini-row" style="padding:10px 10px 0">
+          <div class="stat-mini"><div class="n">14</div><div class="l">Total</div></div>
+          <div class="stat-mini"><div class="n">3</div><div class="l">Interviews</div></div>
+          <div class="stat-mini"><div class="n">21%</div><div class="l">Rate</div></div>
+        </div>
+        <div class="filter-row" style="padding:10px 10px 0">
+          <button class="ftab on">All</button>
+          <button class="ftab">Applied</button>
+          <button class="ftab">Interview</button>
+          <button class="ftab">Offer</button>
+        </div>
+        <div class="app-row">
+          <div><div class="app-co">Google</div><div class="app-role">SWE Intern</div></div>
+          <div class="app-actions"><button class="act-btn">Edit</button><button class="act-btn del">Delete</button></div>
+        </div>
+        <div class="app-row">
+          <div><div class="app-co">Stripe</div><div class="app-role">Backend Intern</div></div>
+          <div class="app-actions"><button class="act-btn">Edit</button><button class="act-btn del">Delete</button></div>
+        </div>
+        <div class="app-row">
+          <div><div class="app-co">Meta</div><div class="app-role">Product Intern</div></div>
+          <div class="app-actions"><button class="act-btn">Edit</button><button class="act-btn del">Delete</button></div>
+        </div>
+      </div>
+      <div class="note"><strong>Problems:</strong> No search, no status shown on list rows, no sort, no date, stats give no trend context, "Rejected" is missing from filters.</div>
+    </div>
+    <div class="frame">
+      <div class="frame-label">After</div>
+      <div class="mock">
+        <div class="topbar">
+          <span class="logo">Trackerr<span>.</span></span>
+          <div style="display:flex;align-items:center;gap:6px">
+            <button style="font-size:10px;padding:3px 9px;border-radius:6px;border:0.5px solid var(--color-border-info);background:var(--color-background-info);color:var(--color-text-info);cursor:pointer"><i class="ti ti-plus" style="font-size:11px;vertical-align:-1px"></i> Add</button>
+            <div class="avatar">K</div>
+          </div>
+        </div>
+        <div class="stat-mini-row" style="padding:10px 10px 0">
+          <div class="stat-mini"><div class="n">14</div><div class="l">Total <span style="color:var(--color-text-success);font-size:9px">↑3 this week</span></div></div>
+          <div class="stat-mini"><div class="n">3</div><div class="l">Interviews</div></div>
+          <div class="stat-mini"><div class="n">21%</div><div class="l">Conversion</div></div>
+        </div>
+        <div style="padding:8px 10px 0">
+          <div class="search-bar"><i class="ti ti-search"></i><span>Search company or role…</span></div>
+        </div>
+        <div class="filter-row" style="padding:4px 10px 0">
+          <button class="ftab on">All</button>
+          <button class="ftab">Applied</button>
+          <button class="ftab">Interview</button>
+          <button class="ftab">Offer</button>
+          <button class="ftab">Rejected</button>
+        </div>
+        <div class="url-row">
+          <div class="favicon">G</div>
+          <div style="flex:1"><div class="app-co" style="font-size:11px">Google</div><div class="app-role" style="font-size:10px">SWE Intern</div></div>
+          <span class="status-badge s-interview">Interview</span>
+          <div class="app-actions"><button class="act-btn">Edit</button><button class="act-btn del">Delete</button></div>
+        </div>
+        <div class="url-row">
+          <div class="favicon" style="background:#EAF3DE;color:#3B6D11">S</div>
+          <div style="flex:1"><div class="app-co" style="font-size:11px">Stripe</div><div class="app-role" style="font-size:10px">Backend Intern</div></div>
+          <span class="status-badge s-offer">Offer</span>
+          <div class="app-actions"><button class="act-btn">Edit</button><button class="act-btn del">Delete</button></div>
+        </div>
+        <div class="url-row">
+          <div class="favicon" style="background:#FAEEDA;color:#854F0B">M</div>
+          <div style="flex:1"><div class="app-co" style="font-size:11px">Meta</div><div class="app-role" style="font-size:10px">Product Intern</div></div>
+          <span class="status-badge s-applied">Applied</span>
+          <div class="app-actions"><button class="act-btn">Edit</button><button class="act-btn del">Delete</button></div>
+        </div>
+      </div>
+      <div class="note"><strong>Improvements:</strong> Status badge visible on each row. Search bar. "Add" button in header. Weekly trend delta on stats. "Rejected" added to filters. Company initials favicon for visual scanning.</div>
+    </div>
+  </div>
+</div>
+
+<div id="delete" class="pane">
+  <div class="two-col">
+    <div class="frame">
+      <div class="frame-label">Before — instant delete, no undo</div>
+      <div class="mock" style="padding:0">
+        <div class="url-row" style="border-bottom:none">
+          <div class="favicon">G</div>
+          <div style="flex:1"><div class="app-co" style="font-size:11px">Google</div><div class="app-role" style="font-size:10px">SWE Intern</div></div>
+          <span class="status-badge s-interview">Interview</span>
+          <div class="app-actions"><button class="act-btn">Edit</button><button class="act-btn del">Delete</button></div>
+        </div>
+        <div style="padding:10px;font-size:11px;color:var(--color-text-tertiary);text-align:center">← clicking Delete removes it immediately with no warning</div>
+      </div>
+      <div class="note"><strong>Problem:</strong> A fat-finger on Delete permanently removes an application entry. There is no confirmation, no undo, and no recovery.</div>
+    </div>
+    <div class="frame">
+      <div class="frame-label">After — option A: confirm modal</div>
+      <div class="mock">
+        <div class="modal-bg">
+          <div class="modal-card">
+            <div style="font-size:20px;color:var(--color-text-danger);margin-bottom:8px"><i class="ti ti-trash"></i></div>
+            <div class="modal-title">Delete this application?</div>
+            <div class="modal-sub">Google — SWE Intern will be permanently removed. This cannot be undone.</div>
+            <div class="modal-actions">
+              <button class="btn-cancel">Cancel</button>
+              <button class="btn-del">Yes, delete</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="note"><strong>Option A:</strong> Confirm modal. Simple and clear. Best for users who might be on mobile where mis-taps are common.</div>
+    </div>
+  </div>
+  <div style="margin-top:12px" class="frame">
+    <div class="frame-label">After — option B: undo toast (better UX)</div>
+    <div class="mock" style="padding:10px">
+      <div class="url-row" style="opacity:.35;border-bottom:none">
+        <div class="favicon">G</div>
+        <div style="flex:1"><div class="app-co" style="font-size:11px">Google</div><div class="app-role" style="font-size:10px">SWE Intern</div></div>
+        <span class="status-badge s-interview" style="opacity:.4">Interview</span>
+      </div>
+      <div class="toast">
+        <i class="ti ti-trash" style="font-size:14px;color:var(--color-text-secondary)"></i>
+        <span>Application deleted</span>
+        <span class="toast-undo">Undo</span>
+        <span style="color:var(--color-text-tertiary);font-size:10px">5s</span>
+      </div>
+    </div>
+    <div class="note"><strong>Option B (recommended):</strong> Optimistic delete — row fades immediately, a 5-second undo toast appears. Faster perceived performance, no interruption. Cancel the actual DELETE fetch if Undo is clicked within the window.</div>
+  </div>
+</div>
+
+<div id="mobile" class="pane">
+  <div class="two-col">
+    <div class="frame">
+      <div class="frame-label">Before — no mobile consideration</div>
+      <div class="mock" style="max-width:180px;margin:0 auto">
+        <div class="topbar" style="flex-wrap:wrap;gap:4px">
+          <span class="logo" style="font-size:12px">Trackerr.</span>
+          <div style="display:flex;gap:3px;flex-wrap:wrap">
+            <button style="font-size:9px;padding:2px 5px;border:0.5px solid var(--color-border-secondary);border-radius:4px;background:transparent;color:var(--color-text-secondary)">Add</button>
+            <button style="font-size:9px;padding:2px 5px;border:0.5px solid var(--color-border-secondary);border-radius:4px;background:transparent;color:var(--color-text-secondary)">Sign out</button>
+            <div class="avatar" style="width:20px;height:20px;font-size:9px">K</div>
+          </div>
+        </div>
+        <div style="padding:6px 8px;font-size:10px;color:var(--color-text-tertiary);text-align:center">Header overflows on small screens. Buttons crowd together.</div>
+      </div>
+    </div>
+    <div class="frame">
+      <div class="frame-label">After — mobile-first layout</div>
+      <div class="mock" style="max-width:180px;margin:0 auto">
+        <div class="topbar">
+          <span class="logo" style="font-size:12px">Trackerr<span>.</span></span>
+          <div class="avatar">K</div>
+        </div>
+        <div style="padding:8px">
+          <div class="stat-mini-row">
+            <div class="stat-mini"><div class="n" style="font-size:14px">14</div><div class="l" style="font-size:9px">Total</div></div>
+            <div class="stat-mini"><div class="n" style="font-size:14px">3</div><div class="l" style="font-size:9px">Interviews</div></div>
+            <div class="stat-mini"><div class="n" style="font-size:14px">21%</div><div class="l" style="font-size:9px">Rate</div></div>
+          </div>
+          <div class="url-row" style="padding:5px 0">
+            <div class="favicon" style="font-size:8px">G</div>
+            <div style="flex:1"><div style="font-size:10px;font-weight:500">Google</div><div style="font-size:9px;color:var(--color-text-secondary)">SWE Intern</div></div>
+            <span class="status-badge s-interview" style="font-size:9px">Interview</span>
+          </div>
+          <div class="url-row" style="padding:5px 0">
+            <div class="favicon" style="background:#EAF3DE;color:#3B6D11;font-size:8px">S</div>
+            <div style="flex:1"><div style="font-size:10px;font-weight:500">Stripe</div><div style="font-size:9px;color:var(--color-text-secondary)">Backend Intern</div></div>
+            <span class="status-badge s-offer" style="font-size:9px">Offer</span>
+          </div>
+        </div>
+        <div class="mobile-bar">
+          <div class="mobile-tab on"><i class="ti ti-layout-dashboard"></i><span>Dashboard</span></div>
+          <div class="mobile-tab"><div class="fab"><i class="ti ti-plus"></i></div></div>
+          <div class="mobile-tab"><i class="ti ti-settings"></i><span>Settings</span></div>
+        </div>
+      </div>
+      <div class="note"><strong>Improvements:</strong> Bottom navigation bar. Floating "+" button for adding apps (standard mobile pattern). Clean header with just logo + avatar. Edit/Delete actions move to a swipe gesture or tap-to-expand row.</div>
+    </div>
+  </div>
+</div>
+
+<div id="features" class="pane">
+  <div class="two-col">
+    <div class="frame">
+      <div class="frame-label">Conversion funnel — replaces raw stats numbers</div>
+      <div class="mock" style="padding:10px">
+        <div style="font-size:12px;font-weight:500;margin-bottom:8px;padding:0 0 6px;border-bottom:0.5px solid var(--color-border-tertiary)">Your application funnel</div>
+        <div class="funnel-row">
+          <div class="funnel-bar" style="width:100%;background:#E6F1FB;color:#185FA5">Applied — 14</div>
+          <div class="funnel-bar" style="width:72%;background:#FAEEDA;color:#854F0B">Interview — 10</div>
+          <div class="funnel-bar" style="width:35%;background:#EAF3DE;color:#3B6D11">Offer — 5</div>
+          <div class="funnel-bar" style="width:14%;background:#FCEBEB;color:#A32D2D">Rejected — 2</div>
+        </div>
+        <div style="font-size:10px;color:var(--color-text-secondary);margin-top:6px">Interview rate: <strong style="font-weight:500;color:var(--color-text-primary)">71%</strong> · Offer rate: <strong style="font-weight:500;color:var(--color-text-primary)">35%</strong></div>
+      </div>
+    </div>
+    <div class="frame">
+      <div class="frame-label">Interview timeline — upcoming dates at a glance</div>
+      <div class="mock">
+        <div style="font-size:12px;font-weight:500;padding:8px 10px;border-bottom:0.5px solid var(--color-border-tertiary)">Upcoming this week</div>
+        <div class="timeline-item">
+          <div class="tl-dot" style="background:#378ADD"></div>
+          <div style="flex:1"><div class="tl-co">Google — Round 2</div><div class="tl-date">Tomorrow, 2:00 PM</div></div>
+          <span class="tl-badge s-interview" style="font-size:9px;padding:1px 6px;border-radius:99px;background:#FAEEDA;color:#854F0B">Interview</span>
+        </div>
+        <div class="timeline-item">
+          <div class="tl-dot" style="background:#639922"></div>
+          <div style="flex:1"><div class="tl-co">Stripe — Offer deadline</div><div class="tl-date">Jun 22, by EOD</div></div>
+          <span class="tl-badge" style="font-size:9px;padding:1px 6px;border-radius:99px;background:#EAF3DE;color:#3B6D11">Offer</span>
+        </div>
+        <div class="timeline-item">
+          <div class="tl-dot" style="background:#888780"></div>
+          <div style="flex:1"><div class="tl-co">Meta — Follow-up due</div><div class="tl-date">Jun 24</div></div>
+          <span class="tl-badge" style="font-size:9px;padding:1px 6px;border-radius:99px;background:#F1EFE8;color:#5F5E5A">Stale</span>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div style="margin-top:12px" class="two-col">
+    <div class="frame">
+      <div class="frame-label">Notes & job URL per application</div>
+      <div class="mock">
+        <div style="font-size:12px;font-weight:500;padding:8px 10px;border-bottom:0.5px solid var(--color-border-tertiary)">Google — SWE Intern</div>
+        <div style="padding:8px 10px;font-size:11px;color:var(--color-text-secondary)">
+          <div style="margin-bottom:8px">
+            <div style="font-size:10px;color:var(--color-text-tertiary);margin-bottom:3px">Job posting</div>
+            <span class="url-link"><i class="ti ti-external-link" style="font-size:11px;vertical-align:-1px"></i> careers.google.com/jobs/123456</span>
+          </div>
+          <div style="margin-bottom:8px">
+            <div style="font-size:10px;color:var(--color-text-tertiary);margin-bottom:3px">Notes</div>
+            <div style="font-size:11px;background:var(--color-background-secondary);border-radius:6px;padding:6px 8px;line-height:1.5">Recruiter: Sarah C. Round 2 LC medium. Prepare system design for Jun 20.</div>
+          </div>
+          <div>
+            <div style="font-size:10px;color:var(--color-text-tertiary);margin-bottom:3px">Follow-up date</div>
+            <div style="display:flex;align-items:center;gap:5px"><i class="ti ti-calendar" style="font-size:12px;color:var(--color-text-info)"></i><span>Jun 25, 2026</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="frame">
+      <div class="frame-label">Search with real-time filtering</div>
+      <div class="mock" style="padding:10px">
+        <div class="search-bar" style="border-color:var(--color-border-info)">
+          <i class="ti ti-search" style="color:var(--color-text-info)"></i>
+          <span style="color:var(--color-text-primary)">google</span>
+          <span style="margin-left:auto;font-size:10px;color:var(--color-text-tertiary)">1 result</span>
+        </div>
+        <div class="url-row">
+          <div class="favicon">G</div>
+          <div style="flex:1"><div class="app-co" style="font-size:11px">Google</div><div class="app-role" style="font-size:10px">SWE Intern</div></div>
+          <span class="status-badge s-interview">Interview</span>
+        </div>
+        <div style="font-size:10px;color:var(--color-text-tertiary);text-align:center;padding:10px 0">No more results for "google"</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function sw(id){
+  document.querySelectorAll('.pane').forEach(p=>p.classList.remove('on'));
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('on'));
+  document.getElementById(id).classList.add('on');
+  event.target.classList.add('on');
+}
+</script>

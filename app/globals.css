@@ -60,9 +60,101 @@
   --color-sidebar-active-text: #1D4ED8;
 }
 
-/* ── System Dark Mode ────────────────────────────────────────────────────── */
+/* ── Explicit Dark Mode ─────────────────────────────────────────────────── */
+:root[data-theme='dark'] {
+  --color-bg: #111827;
+  --color-surface: #1F2937;
+  --color-border: #374151;
+
+  --color-text-primary: #F9FAFB;
+  --color-text-secondary: #D1D5DB;
+  --color-text-muted: #9CA3AF;
+
+  --color-accent: #60A5FA;
+  --color-accent-hover: #3B82F6;
+
+  /* Status: Applied */
+  --color-applied-bg: #1E3A8A;
+  --color-applied-text: #93C5FD;
+  --color-applied-dot: #60A5FA;
+
+  /* Status: Interview */
+  --color-interview-bg: #78350F;
+  --color-interview-text: #FDE68A;
+  --color-interview-dot: #F59E0B;
+
+  /* Status: Offer */
+  --color-offer-bg: #064E3B;
+  --color-offer-text: #A7F3D0;
+  --color-offer-dot: #34D399;
+
+  /* Status: Rejected */
+  --color-rejected-bg: #7F1D1D;
+  --color-rejected-text: #FCA5A5;
+  --color-rejected-dot: #F87171;
+
+  /* Stale */
+  --color-stale-bg: #451A03;
+  --color-stale-border: #F59E0B;
+  --color-stale-text: #FDE68A;
+
+  /* Sidebar */
+  --color-sidebar-text: #D1D5DB;
+  --color-sidebar-hover: #374151;
+  --color-sidebar-hover-text: #FFFFFF;
+  --color-sidebar-active: #1E3A8A;
+  --color-sidebar-active-text: #93C5FD;
+}
+
+/* ── Explicit Light Mode ────────────────────────────────────────────────── */
+:root[data-theme='light'] {
+  --color-bg: #F9FAFB;
+  --color-surface: #FFFFFF;
+  --color-border: #E5E7EB;
+
+  --color-text-primary: #111827;
+  --color-text-secondary: #6B7280;
+  --color-text-muted: #9CA3AF;
+
+  --color-accent: #3B82F6;
+  --color-accent-hover: #2563EB;
+
+  /* Status: Applied */
+  --color-applied-bg: #DBEAFE;
+  --color-applied-text: #1D4ED8;
+  --color-applied-dot: #3B82F6;
+
+  /* Status: Interview */
+  --color-interview-bg: #FEF3C7;
+  --color-interview-text: #B45309;
+  --color-interview-dot: #F59E0B;
+
+  /* Status: Offer */
+  --color-offer-bg: #D1FAE5;
+  --color-offer-text: #065F46;
+  --color-offer-dot: #10B981;
+
+  /* Status: Rejected */
+  --color-rejected-bg: #FEE2E2;
+  --color-rejected-text: #991B1B;
+  --color-rejected-dot: #EF4444;
+
+  /* Stale */
+  --color-stale-bg: #FFFBEB;
+  --color-stale-border: #F59E0B;
+  --color-stale-text: #92400E;
+
+  /* Sidebar */
+  --color-sidebar-text: #374151;
+  --color-sidebar-hover: #F3F4F6;
+  --color-sidebar-hover-text: #111827;
+  --color-sidebar-active: #EFF6FF;
+  --color-sidebar-active-text: #1D4ED8;
+}
+
+/* ── System Dark Mode Fallback ──────────────────────────────────────────── */
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-theme='light']) {
     --color-bg: #111827;
     --color-surface: #1F2937;
     --color-border: #374151;
@@ -532,17 +624,117 @@ body {
   border-color: #C5C6C9 !important;
 }
 
-@media (max-width: 1023px) {
-  .mobile-only-status-select {
-    display: block !important;
-  }
-}
-@media (min-width: 1024px) {
-  .mobile-only-status-select {
-    display: none !important;
-  }
+.card-status-select {
+  display: block;
 }
 
 @keyframes spin {
   to { transform: rotate(360deg); }
+}
+
+/* ── Button Utilities ───────────────────────────────────────────────────── */
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 40px;
+  padding: 0 18px;
+  background-color: var(--color-accent);
+  color: #FFFFFF;
+  border: none;
+  border-radius: var(--radius-btn);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 150ms ease;
+  outline: none;
+}
+.btn-primary:hover:not(:disabled) {
+  background-color: var(--color-accent-hover);
+}
+.btn-primary:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+.btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 40px;
+  padding: 0 18px;
+  background-color: var(--color-surface);
+  color: var(--color-text-secondary);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-btn);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 150ms ease, border-color 150ms ease;
+  outline: none;
+}
+.btn-secondary:hover:not(:disabled) {
+  background-color: var(--color-bg);
+  border-color: var(--color-text-muted);
+}
+.btn-secondary:focus-visible {
+  outline: 2px solid var(--color-text-secondary);
+  outline-offset: 2px;
+}
+
+/* ── Card/Container Utilities ───────────────────────────────────────────── */
+.card-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 80px 24px;
+  background-color: var(--color-surface);
+  border-radius: 16px;
+  border: 1px solid var(--color-border);
+  text-align: center;
+  gap: 16px;
+  box-shadow: var(--shadow-card);
+  margin-top: 20px;
+}
+
+.card-empty-state-title {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--color-text-primary);
+}
+
+.card-empty-state-text {
+  margin: 0;
+  font-size: 15px;
+  color: var(--color-text-secondary);
+  max-width: 420px;
+  line-height: 1.5;
+}
+
+.dashboard-header-title {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--color-text-primary);
+  letter-spacing: -0.3px;
+}
+
+.demo-banner {
+  margin-bottom: 20px;
+  padding: 12px 16px;
+  background-color: var(--color-interview-bg);
+  border: 1px solid var(--color-interview-dot);
+  border-radius: var(--radius-btn);
+  color: var(--color-interview-text);
+  font-size: 14px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
 }

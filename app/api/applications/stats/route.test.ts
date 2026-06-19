@@ -19,7 +19,7 @@ vi.mock('next-auth/jwt', () => ({
 vi.mock('@/src/models/Application', () => {
   return {
     Application: {
-      aggregate: vi.fn(),
+      find: vi.fn(),
     },
   };
 });
@@ -32,7 +32,7 @@ import { Application } from '@/src/models/Application';
 import { GET } from './route';
 
 const mockGetToken = vi.mocked(getToken);
-const mockAggregate = vi.mocked(Application.aggregate);
+const mockFind = vi.mocked(Application.find);
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -100,10 +100,16 @@ describe('Property 8: Stats totals are internally consistent', () => {
             Rejected: statuses.filter((s) => s === 'Rejected').length,
           };
 
-          // Mock the aggregation to return counts matching the generated distribution
-          mockAggregate.mockResolvedValueOnce(
-            statusArrayToAggregation(statuses) as never
-          );
+          // Mock the find query chain: Application.find().lean()
+          const mockApps = statuses.map((status, index) => ({
+            _id: `app-${index}`,
+            userId,
+            status,
+            appliedDate: new Date().toISOString(),
+          }));
+          mockFind.mockReturnValueOnce({
+            lean: vi.fn().mockResolvedValue(mockApps),
+          } as any);
 
           const req = makeStatsRequest();
           const res = await GET(req);
@@ -151,8 +157,10 @@ describe('GET /api/applications/stats — zero applications edge case', () => {
     const userId = 'user-with-no-apps';
     mockGetToken.mockResolvedValue({ sub: userId } as never);
 
-    // Empty aggregation result — no documents matched the $match stage
-    mockAggregate.mockResolvedValueOnce([] as never);
+    // Empty find result
+    mockFind.mockReturnValueOnce({
+      lean: vi.fn().mockResolvedValue([]),
+    } as any);
 
     const req = makeStatsRequest();
     const res = await GET(req);
@@ -183,6 +191,6 @@ describe('GET /api/applications/stats — auth guard', () => {
 
     expect(res.status).toBe(401);
     expect(body.error).toBe('Unauthorized');
-    expect(mockAggregate).not.toHaveBeenCalled();
+    expect(mockFind).not.toHaveBeenCalled();
   });
 });
