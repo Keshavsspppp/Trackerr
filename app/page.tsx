@@ -17,26 +17,7 @@ export default function Home() {
         fontFamily: 'var(--font-inter, "Inter", system-ui, sans-serif)',
       }}
     >
-      {/* Badge at the top */}
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: '6px',
-          padding: '6px 14px',
-          background: '#EFF6FF',
-          border: '1px solid #BFDBFE',
-          borderRadius: '999px',
-          fontSize: '12px',
-          fontWeight: 600,
-          color: '#1D4ED8',
-          marginBottom: '24px',
-          boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
-        }}
-      >
-        <Sparkles size={13} />
-        <span>Free · No Ads · Your Data</span>
-      </div>
+      
 
       {/* Wordmark with Logo */}
       <div style={{ marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '10px', justifyContent: 'center' }}>

@@ -599,7 +599,7 @@ body {
   transition: background-color 100ms ease;
 }
 .hover-bg-gray:hover {
-  background-color: #F9FAFB !important;
+  background-color: var(--color-sidebar-hover) !important;
 }
 
 .hover-btn-accent {
@@ -620,8 +620,8 @@ body {
   transition: background-color 150ms ease, border-color 150ms ease;
 }
 .hover-btn-neutral:hover:not(:disabled) {
-  background-color: #F9FAFB !important;
-  border-color: #C5C6C9 !important;
+  background-color: var(--color-bg) !important;
+  border-color: var(--color-border) !important;
 }
 
 .card-status-select {
