@@ -8,7 +8,7 @@ import { logError } from '@/src/lib/logger';
 // ---------------------------------------------------------------------------
 // Simple in-memory rate limiter for POST requests
 // ---------------------------------------------------------------------------
-export const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
+import { rateLimitMap } from '@/src/lib/rateLimit';
 
 const RATE_LIMIT_WINDOW_MS = 60 * 1000; // 1 minute
 const RATE_LIMIT_MAX_REQUESTS = 10;     // 10 manual/extension creates per minute

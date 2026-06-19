@@ -35,7 +35,8 @@ vi.mock('@/src/models/Application', () => {
 // ---------------------------------------------------------------------------
 import { getToken } from 'next-auth/jwt';
 import { Application } from '@/src/models/Application';
-import { POST, GET, rateLimitMap } from './route';
+import { POST, GET } from './route';
+import { rateLimitMap } from '@/src/lib/rateLimit';
 
 const mockGetToken = vi.mocked(getToken);
 const mockCreate = vi.mocked(Application.create);
