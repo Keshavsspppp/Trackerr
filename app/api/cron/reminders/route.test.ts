@@ -61,7 +61,8 @@ vi.mock('mongoose', async (importOriginal) => {
 // Imports after mocks
 // ---------------------------------------------------------------------------
 import { Application } from '@/src/models/Application';
-import { GET, isStaleApplication } from './route';
+import { GET } from './route';
+import { isStaleApplication } from '@/src/lib/applicationUtils';
 
 const mockFind = vi.mocked(Application.find);
 const mockFindByIdAndUpdate = vi.mocked(Application.findByIdAndUpdate);

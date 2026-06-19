@@ -11,6 +11,7 @@ import { Resend } from 'resend';
 import { connectDB } from '@/src/lib/mongodb';
 import { Application } from '@/src/models/Application';
 import { logError } from '@/src/lib/logger';
+import { isStaleApplication } from '@/src/lib/applicationUtils';
 
 /**
  * Timing-safe string comparison — prevents timing attacks on the CRON_SECRET.
@@ -28,49 +29,6 @@ function safeCompare(a: string, b: string): boolean {
   bufA.write(a);
   bufB.write(b);
   return timingSafeEqual(bufA, bufB);
-}
-
-// ---------------------------------------------------------------------------
-// Pure helper — exported for direct unit/property testing
-// ---------------------------------------------------------------------------
-
-/**
- * Returns true iff the application is "stale" and eligible for a reminder:
- *   - status === "Applied"
- *   - lastUpdated is older than thresholdDays before `now`
- *   - lastReminderSent is null/undefined OR older than thresholdDays before `now`
- * 
- * @param app - Application document with status, lastUpdated, and optional lastReminderSent
- * @param now - Current date/time for comparison
- * @param thresholdDays - Number of days after which an application is considered stale (default: 7)
- * @returns true if the application meets all staleness criteria
- */
-export function isStaleApplication(
-  app: {
-    status: string;
-    lastUpdated: Date;
-    lastReminderSent?: Date | null;
-  },
-  now: Date,
-  thresholdDays: number = 7
-): boolean {
-  if (app.status !== 'Applied') return false;
-
-  // Guard against invalid dates — NaN comparisons always return false,
-  // which would cause incorrect stale detection.
-  if (isNaN(app.lastUpdated.getTime())) return false;
-
-  const cutoff = new Date(now.getTime() - thresholdDays * 24 * 60 * 60 * 1000);
-
-  if (app.lastUpdated >= cutoff) return false;
-
-  if (app.lastReminderSent == null) return true;
-
-  // Guard lastReminderSent against invalid dates — treat NaN as "never sent"
-  // would be misleading, so conservatively return false.
-  if (isNaN(app.lastReminderSent.getTime())) return false;
-
-  return app.lastReminderSent < cutoff;
 }
 
 // ---------------------------------------------------------------------------
