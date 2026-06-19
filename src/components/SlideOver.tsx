@@ -121,11 +121,11 @@ export default function SlideOver({
           bottom: 0,
           width: '100%',
           maxWidth: '400px',
-          background: '#FFFFFF',
+          background: 'var(--color-surface)',
           zIndex: 101,
           display: 'flex',
           flexDirection: 'column',
-          boxShadow: '0 20px 60px rgba(0,0,0,0.15)',
+          boxShadow: 'var(--shadow-modal)',
           overflowY: 'auto',
         }}
       >
@@ -136,7 +136,7 @@ export default function SlideOver({
             alignItems: 'center',
             justifyContent: 'space-between',
             padding: '20px 24px',
-            borderBottom: '1px solid #E5E7EB',
+            borderBottom: '1px solid var(--color-border)',
             flexShrink: 0,
           }}
         >
@@ -145,7 +145,7 @@ export default function SlideOver({
               margin: 0,
               fontSize: '16px',
               fontWeight: 600,
-              color: '#111827',
+              color: 'var(--color-text-primary)',
             }}
           >
             {title}
@@ -158,7 +158,7 @@ export default function SlideOver({
               border: 'none',
               cursor: 'pointer',
               padding: '4px',
-              color: '#6B7280',
+              color: 'var(--color-text-secondary)',
               fontSize: '20px',
               lineHeight: 1,
               display: 'flex',

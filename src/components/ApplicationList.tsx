@@ -26,7 +26,7 @@ interface ApplicationListProps {
   onEdit?: (application: IApplication) => void;
   isDemo?: boolean;
   onDemoStatusChange?: (id: string, newStatus: IApplication["status"]) => void;
-  onDemoDelete?: (id: string) => void;
+  onDelete?: (app: IApplication) => void;
 }
 
 const STATUS_OPTIONS: IApplication["status"][] = [
@@ -118,22 +118,11 @@ export default function ApplicationList({
   onEdit,
   isDemo = false,
   onDemoStatusChange,
-  onDemoDelete,
+  onDelete,
 }: ApplicationListProps) {
   const [updatingId, setUpdatingId] = useState<string | null>(null);
-  const [deletingId, setDeletingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isMounted, setIsMounted] = useState(false);
-  const [pendingDeleteIds, setPendingDeleteIds] = useState<string[]>([]);
-  const deleteTimeouts = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
-  const { showToast } = useToast();
-
-  useEffect(() => {
-    return () => {
-      // Clear any pending timeouts on unmount
-      Object.values(deleteTimeouts.current).forEach(clearTimeout);
-    };
-  }, []);
 
   // Search & Sort state
   const [searchQuery, setSearchQuery] = useState("");
@@ -176,57 +165,7 @@ export default function ApplicationList({
     }
   }
 
-  async function handleDelete(id: string) {
-    setDeletingId(id);
-    setError(null);
-    try {
-      const res = await fetch(`/api/applications/${id}`, {
-        method: "DELETE",
-      });
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        setError((data as { error?: string }).error ?? "Failed to delete application");
-      } else {
-        onRefresh?.();
-      }
-    } catch {
-      setError("Network error — please try again");
-    } finally {
-      setDeletingId(null);
-    }
-  }
-
-  function triggerDelete(app: IApplication) {
-    const id = app._id;
-    // Add to pending delete list immediately
-    setPendingDeleteIds((prev) => [...prev, id]);
-
-    // Show undo toast
-    showToast(`Deleted internship at ${app.company}`, "success", {
-      label: "Undo",
-      onClick: () => {
-        // Cancel deletion
-        if (deleteTimeouts.current[id]) {
-          clearTimeout(deleteTimeouts.current[id]);
-          delete deleteTimeouts.current[id];
-        }
-        setPendingDeleteIds((prev) => prev.filter((itemId) => itemId !== id));
-      },
-    });
-
-    // Schedule the actual delete call in 5 seconds
-    const timeout = setTimeout(async () => {
-      delete deleteTimeouts.current[id];
-      if (isDemo) {
-        onDemoDelete?.(id);
-      } else {
-        await handleDelete(id);
-      }
-      setPendingDeleteIds((prev) => prev.filter((itemId) => itemId !== id));
-    }, 5000);
-
-    deleteTimeouts.current[id] = timeout;
-  }
+  // Redundant local delete handlers removed. onDelete passed from parent.
 
   // Filter & Sort logic
   const filtered = applications.filter((app) => {
@@ -238,9 +177,7 @@ export default function ApplicationList({
     );
   });
 
-  const visible = filtered.filter(app => !pendingDeleteIds.includes(app._id));
-
-  const sorted = [...visible].sort((a, b) => {
+  const sorted = [...filtered].sort((a, b) => {
     if (sortBy === "companyAsc") {
       return a.company.localeCompare(b.company);
     }
@@ -709,8 +646,7 @@ export default function ApplicationList({
                             </button>
                             <button
                               aria-label={`Delete internship for ${app.role} at ${app.company}`}
-                              disabled={deletingId === app._id}
-                              onClick={() => triggerDelete(app)}
+                              onClick={() => onDelete?.(app)}
                               className="hover-btn-danger"
                               style={{
                                 padding: "5px 12px",
@@ -718,17 +654,16 @@ export default function ApplicationList({
                                 color: "#FFFFFF",
                                 border: "none",
                                 borderRadius: "6px",
-                                cursor: deletingId === app._id ? "not-allowed" : "pointer",
+                                cursor: "pointer",
                                 fontSize: "12px",
                                 fontWeight: 500,
-                                opacity: deletingId === app._id ? 0.6 : 1,
                                 minHeight: "30px",
                                 display: "inline-flex",
                                 alignItems: "center",
                                 gap: "4px",
                               }}
                             >
-                              <Trash2 size={12} /> {deletingId === app._id ? "Deleting…" : "Delete"}
+                              <Trash2 size={12} /> Delete
                             </button>
                           </div>
                         </td>
@@ -950,8 +885,7 @@ export default function ApplicationList({
                     </button>
                     <button
                       aria-label={`Delete internship for ${app.role} at ${app.company}`}
-                      disabled={deletingId === app._id}
-                      onClick={() => triggerDelete(app)}
+                      onClick={() => onDelete?.(app)}
                       className="hover-btn-danger"
                       style={{
                         flex: 1,
@@ -960,7 +894,7 @@ export default function ApplicationList({
                         color: "#FFFFFF",
                         border: "none",
                         borderRadius: "8px",
-                        cursor: deletingId === app._id ? "not-allowed" : "pointer",
+                        cursor: "pointer",
                         fontSize: "13px",
                         fontWeight: 600,
                         textAlign: "center",
@@ -970,7 +904,7 @@ export default function ApplicationList({
                         gap: "6px",
                       }}
                     >
-                      <Trash2 size={14} /> {deletingId === app._id ? "Deleting…" : "Delete"}
+                      <Trash2 size={14} /> Delete
                     </button>
                   </div>
                 </div>

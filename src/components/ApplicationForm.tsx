@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import type { IApplication } from './ApplicationList';
 
 interface ApplicationFormProps {
@@ -8,6 +8,8 @@ interface ApplicationFormProps {
   onCreated?: (newApp?: IApplication) => void;
   onUpdated?: (updatedApp?: IApplication) => void;
   onCancel?: () => void;
+  onDelete?: (app: IApplication) => void;
+  onDirtyChange?: (dirty: boolean) => void;
   showToast?: (message: string, type: 'success' | 'error') => void;
   isDemo?: boolean;
 }
@@ -64,6 +66,8 @@ export default function ApplicationForm({
   onCreated,
   onUpdated,
   onCancel,
+  onDelete,
+  onDirtyChange,
   showToast,
   isDemo = false,
 }: ApplicationFormProps) {
@@ -95,6 +99,39 @@ export default function ApplicationForm({
     }, 100);
     return () => clearTimeout(timer);
   }, [application]);
+
+  const isDirty = useMemo(() => {
+    if (application) {
+      const origAppliedDate = application.appliedDate ? new Date(application.appliedDate).toISOString().substring(0, 10) : '';
+      return (
+        fields.company !== application.company ||
+        fields.role !== application.role ||
+        fields.status !== application.status ||
+        fields.appliedDate !== origAppliedDate ||
+        fields.jobUrl !== (application.jobUrl ?? '') ||
+        fields.notes !== (application.notes ?? '')
+      );
+    } else {
+      return (
+        fields.company !== '' ||
+        fields.role !== '' ||
+        fields.status !== 'Applied' ||
+        fields.appliedDate !== '' ||
+        fields.jobUrl !== '' ||
+        fields.notes !== ''
+      );
+    }
+  }, [fields, application]);
+
+  useEffect(() => {
+    onDirtyChange?.(isDirty);
+  }, [isDirty, onDirtyChange]);
+
+  function handleDeleteClick() {
+    if (application && onDelete) {
+      onDelete(application);
+    }
+  }
 
   const isDisabled =
     submitting ||
@@ -240,6 +277,86 @@ export default function ApplicationForm({
         width: '100%',
       }}
     >
+      {/* Metadata Line */}
+      {application && (
+        <div
+          style={{
+            fontSize: '12px',
+            color: 'var(--color-text-muted)',
+            marginBottom: '4px',
+            borderBottom: '1px dashed var(--color-border)',
+            paddingBottom: '8px',
+          }}
+        >
+          {application.createdAt && `Added ${new Date(application.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}`}
+          {application.createdAt && application.lastUpdated && ` · `}
+          {application.lastUpdated && `Last updated ${new Date(application.lastUpdated).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}`}
+        </div>
+      )}
+
+      {/* Quick Status Row */}
+      {application && (
+        <div style={{ marginBottom: '8px' }}>
+          <span style={labelStyle}>Quick Status Update</span>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '8px' }}>
+            {VALID_STATUSES.map((s) => {
+              const isActive = fields.status === s;
+              let activeBg = 'var(--color-applied-bg)';
+              let activeText = 'var(--color-applied-text)';
+              let activeDot = 'var(--color-applied-dot)';
+              if (s === 'Interview') {
+                activeBg = 'var(--color-interview-bg)';
+                activeText = 'var(--color-interview-text)';
+                activeDot = 'var(--color-interview-dot)';
+              } else if (s === 'Offer') {
+                activeBg = 'var(--color-offer-bg)';
+                activeText = 'var(--color-offer-text)';
+                activeDot = 'var(--color-offer-dot)';
+              } else if (s === 'Rejected') {
+                activeBg = 'var(--color-rejected-bg)';
+                activeText = 'var(--color-rejected-text)';
+                activeDot = 'var(--color-rejected-dot)';
+              }
+              
+              return (
+                <button
+                  key={s}
+                  type="button"
+                  onClick={() => {
+                    setFields((prev) => ({ ...prev, status: s }));
+                  }}
+                  style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    padding: '8px 4px',
+                    borderRadius: 'var(--radius-btn, 8px)',
+                    border: `1px solid ${isActive ? activeDot : 'var(--color-border)'}`,
+                    background: isActive ? activeBg : 'var(--color-surface)',
+                    color: isActive ? activeText : 'var(--color-text-secondary)',
+                    cursor: 'pointer',
+                    fontSize: '12px',
+                    fontWeight: 600,
+                    transition: 'all 150ms ease',
+                  }}
+                >
+                  <span
+                    style={{
+                      width: '8px',
+                      height: '8px',
+                      borderRadius: '50%',
+                      background: isActive ? activeDot : 'var(--color-text-muted)',
+                      marginBottom: '4px',
+                    }}
+                  />
+                  {s}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
       {/* Company */}
       <div>
         <label htmlFor="company" style={labelStyle}>
@@ -388,74 +505,103 @@ export default function ApplicationForm({
         </span>
       )}
 
-      {/* Action buttons */}
+      {/* Action buttons - Sticky to bottom */}
       <div
         style={{
+          position: 'sticky',
+          bottom: 0,
+          background: 'var(--color-surface)',
+          borderTop: '1px solid var(--color-border)',
+          padding: '16px 0 0',
+          marginTop: '16px',
           display: 'flex',
           gap: '12px',
+          alignItems: 'center',
           justifyContent: 'space-between',
-          paddingTop: '4px',
+          zIndex: 10,
         }}
       >
-        {onCancel && (
+        {application && (
           <button
             type="button"
-            onClick={onCancel}
-            className="hover-btn-neutral"
+            onClick={handleDeleteClick}
+            className="hover-btn-danger"
             style={{
-              flex: 1,
-              height: '44px',
+              height: '40px',
+              padding: '0 16px',
               fontSize: '14px',
-              fontWeight: 500,
+              fontWeight: 600,
               cursor: 'pointer',
               borderRadius: 'var(--radius-btn)',
-              border: '1px solid var(--color-border)',
-              background: 'var(--color-surface)',
-              color: 'var(--color-text-secondary)',
+              border: '1px solid var(--color-rejected-dot)',
+              background: 'transparent',
+              color: 'var(--color-rejected-dot)',
+              transition: 'all 150ms ease',
+            }}
+            onMouseEnter={(e) => {
+              (e.currentTarget as HTMLButtonElement).style.background = 'var(--color-rejected-bg)';
+            }}
+            onMouseLeave={(e) => {
+              (e.currentTarget as HTMLButtonElement).style.background = 'transparent';
             }}
           >
-            Cancel
+            Delete
           </button>
         )}
-        <button
-          type="submit"
-          disabled={isDisabled}
-          className="hover-btn-accent"
-          style={{
-            flex: 1,
-            height: '44px',
-            fontSize: '14px',
-            fontWeight: 600,
-            cursor: isDisabled ? 'not-allowed' : 'pointer',
-            borderRadius: 'var(--radius-btn)',
-            border: 'none',
-            background: isDisabled && !submitting ? '#93C5FD' : 'var(--color-accent)',
-            color: '#FFFFFF',
-            opacity: isDisabled ? 0.7 : 1,
-          }}
-        >
-          {submitting ? (
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
-              <svg
-                style={{
-                  animation: 'spin 1s linear infinite',
-                  width: '16px',
-                  height: '16px',
-                }}
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="3"
-              >
-                <circle cx="12" cy="12" r="10" stroke="rgba(255,255,255,0.25)" />
-                <path d="M12 2a10 10 0 0 1 10 10" />
-              </svg>
-              <span>Saving…</span>
-            </div>
-          ) : (
-            'Save →'
+        <div style={{ display: 'flex', gap: '12px', flex: application ? undefined : 1, justifyContent: 'flex-end', width: application ? undefined : '100%' }}>
+          {onCancel && (
+            <button
+              type="button"
+              onClick={onCancel}
+              className="btn-secondary"
+              style={{
+                height: '40px',
+                padding: '0 18px',
+                fontSize: '14px',
+                fontWeight: 500,
+                flex: application ? undefined : 1,
+              }}
+            >
+              Cancel
+            </button>
           )}
-        </button>
+          <button
+            type="submit"
+            disabled={isDisabled}
+            className="btn-primary"
+            style={{
+              height: '40px',
+              padding: '0 18px',
+              fontSize: '14px',
+              fontWeight: 600,
+              cursor: isDisabled ? 'not-allowed' : 'pointer',
+              opacity: isDisabled ? 0.7 : 1,
+              flex: application ? undefined : 1,
+            }}
+          >
+            {submitting ? (
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+                <svg
+                  style={{
+                    animation: 'spin 1s linear infinite',
+                    width: '16px',
+                    height: '16px',
+                  }}
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="3"
+                >
+                  <circle cx="12" cy="12" r="10" stroke="rgba(255,255,255,0.25)" />
+                  <path d="M12 2a10 10 0 0 1 10 10" />
+                </svg>
+                <span>Saving…</span>
+              </div>
+            ) : (
+              'Save'
+            )}
+          </button>
+        </div>
       </div>
     </form>
   );

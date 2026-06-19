@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useSession, signOut } from "next-auth/react";
 import {
@@ -70,6 +70,15 @@ export default function DashboardClient({
   const [analyticsOpen, setAnalyticsOpen] = useState(false); // Collapsed by default
   const [theme, setTheme] = useState<'light' | 'dark' | 'system'>('system');
   const [demoApps, setDemoApps] = useState<IApplication[]>([]);
+  const [isFormDirty, setIsFormDirty] = useState(false);
+  const [pendingDeleteIds, setPendingDeleteIds] = useState<string[]>([]);
+  const deleteTimeouts = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
+
+  useEffect(() => {
+    return () => {
+      Object.values(deleteTimeouts.current).forEach(clearTimeout);
+    };
+  }, []);
 
   // Load saved view mode and sidebar configuration from localStorage on mount
   useEffect(() => {
@@ -113,20 +122,22 @@ export default function DashboardClient({
   }, [applications, isDemo]);
 
   const stats = useMemo(() => {
-    if (!isDemo) return initialStats;
+    const appsToUse = isDemo ? demoApps : applications;
+    const activeApps = appsToUse.filter((app) => !pendingDeleteIds.includes(app._id));
+
     const byStatus = {
       Applied: 0,
       Interview: 0,
       Offer: 0,
       Rejected: 0,
     };
-    for (const app of demoApps) {
+    for (const app of activeApps) {
       const s = app.status;
       if (s in byStatus) {
         byStatus[s] += 1;
       }
     }
-    const total = demoApps.length;
+    const total = activeApps.length;
     const interviewRate = total === 0 ? 0 : (byStatus.Interview + byStatus.Offer) / total;
     return {
       total,
@@ -134,7 +145,7 @@ export default function DashboardClient({
       interviewRate,
       trends: initialStats.trends,
     };
-  }, [demoApps, initialStats, isDemo]);
+  }, [demoApps, applications, pendingDeleteIds, initialStats, isDemo]);
 
   function handleDemoStatusChange(id: string, newStatus: any) {
     setDemoApps((prev) =>
@@ -145,7 +156,66 @@ export default function DashboardClient({
 
   function handleDemoDelete(id: string) {
     setDemoApps((prev) => prev.filter((app) => app._id !== id));
-    showToast("[Demo Sandbox] Internship deleted permanently", "success");
+  }
+
+  async function handleDelete(id: string) {
+    try {
+      const res = await fetch(`/api/applications/${id}`, {
+        method: "DELETE",
+      });
+      if (!res.ok) {
+        showToast("Failed to delete application", "error");
+      } else {
+        handleRefresh();
+      }
+    } catch {
+      showToast("Network error — please try again", "error");
+    }
+  }
+
+  function triggerDelete(app: IApplication) {
+    const id = app._id;
+    setPendingDeleteIds((prev) => [...prev, id]);
+
+    showToast(`Deleted internship at ${app.company}`, "success", {
+      label: "Undo",
+      onClick: () => {
+        if (deleteTimeouts.current[id]) {
+          clearTimeout(deleteTimeouts.current[id]);
+          delete deleteTimeouts.current[id];
+        }
+        setPendingDeleteIds((prev) => prev.filter((itemId) => itemId !== id));
+      },
+    });
+
+    const timeout = setTimeout(async () => {
+      delete deleteTimeouts.current[id];
+      if (isDemo) {
+        handleDemoDelete(id);
+      } else {
+        await handleDelete(id);
+      }
+      setPendingDeleteIds((prev) => prev.filter((itemId) => itemId !== id));
+    }, 5000);
+
+    deleteTimeouts.current[id] = timeout;
+  }
+
+  function handleCloseSlideOver() {
+    if (isFormDirty) {
+      const confirmClose = window.confirm("You have unsaved changes. Are you sure you want to discard them?");
+      if (!confirmClose) return;
+    }
+    setSlideOverOpen(false);
+    setEditingApplication(undefined);
+    setIsFormDirty(false);
+  }
+
+  function handleDeleteFromForm(app: IApplication) {
+    setIsFormDirty(false);
+    setSlideOverOpen(false);
+    setEditingApplication(undefined);
+    triggerDelete(app);
   }
 
   // Load saved view mode and sidebar configuration from localStorage on mount
@@ -233,6 +303,7 @@ export default function DashboardClient({
   }
 
   function handleCreated(newApp?: IApplication) {
+    setIsFormDirty(false);
     setSlideOverOpen(false);
     setEditingApplication(undefined);
     if (isDemo && newApp) {
@@ -243,6 +314,7 @@ export default function DashboardClient({
   }
 
   function handleUpdated(updatedApp?: IApplication) {
+    setIsFormDirty(false);
     setSlideOverOpen(false);
     setEditingApplication(undefined);
     if (isDemo && updatedApp) {
@@ -263,10 +335,12 @@ export default function DashboardClient({
 
   const baseApps = isDemo ? demoApps : applications;
 
+  const visibleApps = baseApps.filter((app) => !pendingDeleteIds.includes(app._id));
+
   const filteredApplications =
     selectedStatus === undefined
-      ? baseApps
-      : baseApps.filter((app) => app.status === selectedStatus);
+      ? visibleApps
+      : visibleApps.filter((app) => app.status === selectedStatus);
 
   const userName =
     session?.user?.name ?? session?.user?.email ?? "User";
@@ -615,8 +689,9 @@ export default function DashboardClient({
           style={{
             flex: 1,
             padding: "32px 32px 48px",
-            maxWidth: "1200px",
+            maxWidth: sidebarOpen ? "1200px" : "none",
             width: "100%",
+            margin: "0 auto",
           }}
         >
           {isDemo && (
@@ -759,7 +834,7 @@ export default function DashboardClient({
                           rejected: stats.byStatus.Rejected,
                         }}
                       />
-                       <VelocityChart applications={isDemo ? demoApps : applications} />
+                       <VelocityChart applications={visibleApps} />
                     </div>
                   )}
                 </section>
@@ -860,7 +935,7 @@ export default function DashboardClient({
                     }}
                     isDemo={isDemo}
                     onDemoStatusChange={handleDemoStatusChange}
-                    onDemoDelete={handleDemoDelete}
+                    onDelete={triggerDelete}
                   />
                 ) : (
                    <KanbanBoard
@@ -883,20 +958,16 @@ export default function DashboardClient({
       {/* ── Slide-over panel ── */}
       <SlideOver
         isOpen={slideOverOpen}
-        onClose={() => {
-          setSlideOverOpen(false);
-          setEditingApplication(undefined);
-        }}
-        title={editingApplication ? "← Edit Internship" : "← Add Internship"}
+        onClose={handleCloseSlideOver}
+        title={editingApplication ? "Edit Internship" : "Add Internship"}
       >
          <ApplicationForm
           application={editingApplication}
-          onCancel={() => {
-            setSlideOverOpen(false);
-            setEditingApplication(undefined);
-          }}
+          onCancel={handleCloseSlideOver}
           onCreated={handleCreated}
           onUpdated={handleUpdated}
+          onDelete={handleDeleteFromForm}
+          onDirtyChange={setIsFormDirty}
           showToast={showToast}
           isDemo={isDemo}
         />
