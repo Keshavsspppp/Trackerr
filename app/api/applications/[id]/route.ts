@@ -29,7 +29,7 @@ export async function PATCH(
     }
 
     // Rate Limiting
-    const rateLimitResult = checkRateLimit(userId, 20, 'modify');
+    const rateLimitResult = await checkRateLimit(userId, 20, 'modify');
     if (!rateLimitResult.allowed) {
       return NextResponse.json(
         { error: 'Too many requests. Please try again later.' },
@@ -116,7 +116,7 @@ export async function DELETE(
     }
 
     // Rate Limiting
-    const rateLimitResult = checkRateLimit(userId, 20, 'modify');
+    const rateLimitResult = await checkRateLimit(userId, 20, 'modify');
     if (!rateLimitResult.allowed) {
       return NextResponse.json(
         { error: 'Too many requests. Please try again later.' },

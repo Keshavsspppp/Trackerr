@@ -41,7 +41,7 @@ export async function POST(req: NextRequest) {
     const userId = token.sub;
 
     // Rate Limiting
-    const rateLimitResult = checkRateLimit(userId, 20, 'modify');
+    const rateLimitResult = await checkRateLimit(userId, 20, 'modify');
     if (!rateLimitResult.allowed) {
       return NextResponse.json(
         { error: 'Too many requests. Please try again later.' },

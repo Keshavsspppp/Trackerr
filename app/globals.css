@@ -401,7 +401,19 @@ body {
   left: 0;
   bottom: 0;
   z-index: 50;
+  overflow: hidden;
+  transition: width 240ms cubic-bezier(0.4, 0, 0.2, 1);
   overflow-y: auto;
+  scrollbar-width: none;
+}
+
+.layout-sidebar::-webkit-scrollbar {
+  display: none;
+}
+
+/* Icon-rail collapsed state */
+.layout-sidebar.sidebar-collapsed {
+  width: 56px;
 }
 
 .layout-main {
@@ -411,6 +423,11 @@ body {
   display: flex;
   flex-direction: column;
   min-height: 100vh;
+  transition: margin-left 240ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.layout-main.sidebar-collapsed {
+  margin-left: 56px;
 }
 
 /* ── Nav Item ────────────────────────────────────────────────────────────── */
@@ -430,6 +447,7 @@ body {
   text-align: left;
   transition: background 150ms ease, color 150ms ease;
   text-decoration: none;
+  white-space: nowrap;
 }
 
 .nav-item:hover {
@@ -441,6 +459,58 @@ body {
   background: var(--color-sidebar-active);
   color: var(--color-sidebar-active-text);
   font-weight: 600;
+}
+
+/* Collapsed nav items — icon only with tooltip */
+.sidebar-collapsed .nav-item {
+  padding: 10px 0;
+  justify-content: center;
+  gap: 0;
+  border-radius: 8px;
+  position: relative;
+}
+
+.sidebar-collapsed .nav-item-label {
+  display: none;
+}
+
+/* Tooltip for collapsed items */
+.sidebar-collapsed .nav-item::after {
+  content: attr(data-label);
+  position: absolute;
+  left: calc(100% + 8px);
+  top: 50%;
+  transform: translateY(-50%);
+  background: var(--color-text-primary);
+  color: var(--color-bg);
+  padding: 5px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 120ms ease;
+  z-index: 100;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+.sidebar-collapsed .nav-item:hover::after {
+  opacity: 1;
+}
+
+/* Sidebar text/label fade */
+.sidebar-text {
+  opacity: 1;
+  transition: opacity 180ms ease;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.sidebar-collapsed .sidebar-text {
+  opacity: 0;
+  width: 0;
+  pointer-events: none;
 }
 
 /* ── Responsive: hide sidebar on mobile (< 1024px) ──────────────────────── */

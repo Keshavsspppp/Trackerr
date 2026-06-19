@@ -32,6 +32,15 @@ function safeCompare(a: string, b: string): boolean {
   return timingSafeEqual(bufA, bufB);
 }
 
+function escapeHtml(str: string): string {
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
 // ---------------------------------------------------------------------------
 // Route handler
 // ---------------------------------------------------------------------------
@@ -101,12 +110,14 @@ export async function GET(req: NextRequest) {
         }
 
         const deepLink = `${baseUrl}/dashboard?appId=${app._id}`;
+        const roleEscaped = escapeHtml(app.role);
+        const companyEscaped = escapeHtml(app.company);
 
         await resend.emails.send({
           from: process.env.RESEND_FROM_EMAIL ?? 'noreply@jobtracker.app',
           to: app.userEmail,
           subject: 'Follow up on your application',
-          html: `<p>Don't forget to follow up on your application for <strong>${app.role}</strong> at <strong>${app.company}</strong>.</p>
+          html: `<p>Don't forget to follow up on your application for <strong>${roleEscaped}</strong> at <strong>${companyEscaped}</strong>.</p>
 <p><a href="${deepLink}" style="display: inline-block; padding: 10px 16px; background-color: #3b82f6; color: white; text-decoration: none; border-radius: 6px; font-weight: bold;">Follow Up on Trackerr</a></p>`,
         });
 

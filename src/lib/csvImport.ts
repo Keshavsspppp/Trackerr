@@ -10,6 +10,8 @@ export interface CSVImportResult {
  * Expected CSV columns: company, role, status, appliedDate, jobUrl, notes
  * Required fields: company, role
  * 
+ * Performs bulk import in a single request to prevent rate-limit 429 errors.
+ * 
  * @param file The CSV file to import
  * @param userId The ID of the authenticated user
  * @returns Summary of import results
@@ -27,7 +29,8 @@ export async function importApplicationsFromCSV(
   try {
     // Read file as text
     const text = await file.text();
-    const lines = text.split('\n').filter(line => line.trim());
+    // Split on \r\n or \n to support Windows line endings correctly
+    const lines = text.split(/\r?\n/).filter(line => line.trim());
 
     if (lines.length === 0) {
       result.errors.push({ row: 0, reason: 'Empty file' });
@@ -37,6 +40,9 @@ export async function importApplicationsFromCSV(
     // Parse header row
     const headers = parseCSVLine(lines[0]);
     const columnMap = mapColumns(headers);
+
+    const batchData: Array<Record<string, unknown>> = [];
+    const rowMapping: number[] = [];
 
     // Process data rows
     for (let i = 1; i < lines.length; i++) {
@@ -104,7 +110,7 @@ export async function importApplicationsFromCSV(
         }
       }
 
-      // Build request body
+      // Build request body for this row
       const body: Record<string, unknown> = {
         company,
         role,
@@ -116,30 +122,52 @@ export async function importApplicationsFromCSV(
       if (jobUrl) body.jobUrl = jobUrl;
       if (notes) body.notes = notes;
 
-      // Call API to create application
+      batchData.push(body);
+      rowMapping.push(rowNumber);
+    }
+
+    if (batchData.length > 0) {
       try {
         const res = await fetch('/api/applications', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(body),
+          body: JSON.stringify(batchData),
         });
 
         if (!res.ok) {
           const errorData = await res.json().catch(() => ({}));
-          result.errors.push({
-            row: rowNumber,
-            reason: (errorData as { error?: string }).error || 'API request failed',
-          });
-          result.skippedCount++;
+          const generalError = (errorData as { error?: string }).error || 'API request failed';
+          
+          for (const rowNum of rowMapping) {
+            result.errors.push({
+              row: rowNum,
+              reason: generalError,
+            });
+            result.skippedCount++;
+          }
         } else {
-          result.successCount++;
+          const resData = await res.json();
+          result.successCount += resData.insertedCount || 0;
+
+          if (resData.errors && Array.isArray(resData.errors)) {
+            for (const err of resData.errors) {
+              const rowNum = rowMapping[err.index];
+              result.errors.push({
+                row: rowNum,
+                reason: err.error,
+              });
+              result.skippedCount++;
+            }
+          }
         }
       } catch (err) {
-        result.errors.push({
-          row: rowNumber,
-          reason: 'Network error',
-        });
-        result.skippedCount++;
+        for (const rowNum of rowMapping) {
+          result.errors.push({
+            row: rowNum,
+            reason: 'Network error',
+          });
+          result.skippedCount++;
+        }
       }
     }
 

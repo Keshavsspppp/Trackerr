@@ -7,7 +7,11 @@ import type { IApplicationStats } from "@/app/api/applications/stats/route";
 import type { IApplication } from "@/src/components/ApplicationList";
 import DashboardClient from "./DashboardClient";
 
-export default async function DashboardPage() {
+export default async function DashboardPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ limit?: string | string[] | undefined }>;
+}) {
   // 1. Verify the session — redirect to landing if unauthenticated
   const session = await getServerSession(authOptions);
   if (!session?.user) {
@@ -19,12 +23,24 @@ export default async function DashboardPage() {
     redirect("/");
   }
 
-  // 2. Connect to MongoDB and fetch data directly (same process, no HTTP round-trip)
+  // 2. Connect to MongoDB and fetch data directly
   await connectDB();
 
-  // Fetch applications sorted by createdAt descending
+  // Resolve limit from searchParams
+  const resolvedParams = await searchParams;
+  const limitParam = resolvedParams?.limit;
+  let limit = 100;
+  if (limitParam && typeof limitParam === 'string') {
+    const parsed = parseInt(limitParam, 10);
+    if (!isNaN(parsed)) {
+      limit = Math.max(1, parsed);
+    }
+  }
+
+  // Fetch applications sorted by createdAt descending, limited by page/limit parameters
   const rawApplications = await Application.find({ userId })
     .sort({ createdAt: -1 })
+    .limit(limit)
     .lean();
 
   // Serialize Mongoose lean documents to plain objects that match IApplication
@@ -46,7 +62,9 @@ export default async function DashboardPage() {
       : new Date().toISOString(),
   }));
 
-  // 3. Compute stats using the same logic as GET /api/applications/stats
+  // 3. Compute stats using the entire database (not just the paginated slice)
+  const statsApps = await Application.find({ userId }, { status: 1, appliedDate: 1 }).lean();
+
   const byStatus: IApplicationStats["byStatus"] = {
     Applied: 0,
     Interview: 0,
@@ -54,8 +72,8 @@ export default async function DashboardPage() {
     Rejected: 0,
   };
 
-  for (const app of applications) {
-    const s = app.status;
+  for (const app of statsApps) {
+    const s = app.status as keyof typeof byStatus;
     if (s in byStatus) {
       byStatus[s] += 1;
     }
@@ -72,10 +90,10 @@ export default async function DashboardPage() {
   const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
   const sixtyDaysAgo = new Date(now.getTime() - 60 * 24 * 60 * 60 * 1000);
 
-  const last30DaysApps = applications.filter(
+  const last30DaysApps = statsApps.filter(
     (app) => app.appliedDate && new Date(app.appliedDate) >= thirtyDaysAgo
   );
-  const prior30DaysApps = applications.filter((app) => {
+  const prior30DaysApps = statsApps.filter((app) => {
     if (!app.appliedDate) return false;
     const date = new Date(app.appliedDate);
     return date >= sixtyDaysAgo && date < thirtyDaysAgo;

@@ -7,7 +7,7 @@ import { logError } from '@/src/lib/logger';
 import { checkRateLimit } from '@/src/lib/rateLimit';
 
 // ---------------------------------------------------------------------------
-// POST /api/applications — create a new application
+// POST /api/applications — create new application(s) (supports bulk insert)
 // ---------------------------------------------------------------------------
 export async function POST(req: NextRequest) {
   try {
@@ -20,21 +20,18 @@ export async function POST(req: NextRequest) {
     const userEmail = token.email as string | undefined;
 
     const body = await req.json();
-    const result = createApplicationSchema.safeParse(body);
-    if (!result.success) {
-      const errorMessage = result.error.errors[0]?.message ?? 'Invalid input';
-      return NextResponse.json({ error: errorMessage }, { status: 400 });
+    const isArray = Array.isArray(body);
+    const items = isArray ? body : [body];
+
+    if (items.length === 0) {
+      return NextResponse.json({ error: 'No applications provided' }, { status: 400 });
     }
 
-    const { company, role, status, appliedDate, jobUrl, notes, source, capturedAt, originalUrl } = result.data;
-
-    // CSV bulk imports get a higher rate-limit cap (100/min) so that importing
-    // a full spreadsheet never returns 429. Manual/extension adds keep the
-    // stricter 10/min cap to prevent abuse.
-    const isCsvImport = source === 'csv_import';
-    const limit = isCsvImport ? 100 : 10;
-    const keyPrefix = isCsvImport ? 'csv' : '';
-    const rateLimitResult = checkRateLimit(userId, limit, keyPrefix);
+    // Rate Limiting
+    const hasCsvImport = items.some((item: any) => item?.source === 'csv_import');
+    const limit = hasCsvImport ? 100 : 10;
+    const keyPrefix = hasCsvImport ? 'csv' : '';
+    const rateLimitResult = await checkRateLimit(userId, limit, keyPrefix);
     if (!rateLimitResult.allowed) {
       return NextResponse.json(
         { error: 'Too many requests. Please try again later.' },
@@ -57,22 +54,52 @@ export async function POST(req: NextRequest) {
 
     await connectDB();
 
-    const application = await Application.create({
-      userId,
-      userEmail, // Store email directly to avoid cross-collection lookups in cron
-      company: company.trim(),
-      role: role.trim(),
-      ...(status !== undefined ? { status } : {}),
-      ...(appliedDate !== undefined ? { appliedDate: new Date(appliedDate) } : {}),
-      ...(jobUrl !== undefined ? { jobUrl } : {}),
-      ...(notes !== undefined ? { notes } : {}),
-      source: source || 'manual', // Default to 'manual' when not provided
-      ...(capturedAt !== undefined ? { capturedAt: new Date(capturedAt) } : {}),
-      ...(originalUrl !== undefined ? { originalUrl } : {}),
-      lastUpdated: new Date(),
-    });
+    const createdApps = [];
+    const errors = [];
 
-    return NextResponse.json(application, { status: 201 });
+    for (let i = 0; i < items.length; i++) {
+      const item = items[i];
+      const result = createApplicationSchema.safeParse(item);
+      if (!result.success) {
+        const errorMessage = result.error.errors[0]?.message ?? 'Invalid input';
+        errors.push({ index: i, error: errorMessage });
+        continue;
+      }
+
+      const { company, role, status, appliedDate, jobUrl, notes, source, capturedAt, originalUrl } = result.data;
+
+      createdApps.push({
+        userId,
+        userEmail, // Store email directly to avoid cross-collection lookups in cron
+        company: company.trim(),
+        role: role.trim(),
+        ...(status !== undefined ? { status } : {}),
+        ...(appliedDate !== undefined ? { appliedDate: new Date(appliedDate) } : {}),
+        ...(jobUrl !== undefined ? { jobUrl } : {}),
+        ...(notes !== undefined ? { notes } : {}),
+        source: source || 'manual', // Default to 'manual' when not provided
+        ...(capturedAt !== undefined ? { capturedAt: new Date(capturedAt) } : {}),
+        ...(originalUrl !== undefined ? { originalUrl } : {}),
+        lastUpdated: new Date(),
+      });
+    }
+
+    if (createdApps.length > 0) {
+      if (isArray) {
+        const inserted = await Application.insertMany(createdApps);
+        return NextResponse.json({
+          success: true,
+          insertedCount: inserted.length,
+          inserted,
+          errors,
+        }, { status: 201 });
+      } else {
+        const inserted = await Application.create(createdApps[0]);
+        return NextResponse.json(inserted, { status: 201 });
+      }
+    }
+
+    return NextResponse.json({ error: 'Failed to create applications', errors }, { status: 400 });
   } catch (err) {
     logError('[POST /api/applications]', err);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
@@ -103,9 +130,22 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    // Parse pagination params with defaults
-    const page = pageParam ? Math.max(1, parseInt(pageParam, 10)) : 1;
-    const limit = limitParam ? Math.min(100, Math.max(1, parseInt(limitParam, 10))) : 50;
+    // Parse pagination params with defaults and explicit NaN checks
+    let page = 1;
+    if (pageParam) {
+      const parsed = parseInt(pageParam, 10);
+      if (!isNaN(parsed)) {
+        page = Math.max(1, parsed);
+      }
+    }
+
+    let limit = 50;
+    if (limitParam) {
+      const parsed = parseInt(limitParam, 10);
+      if (!isNaN(parsed)) {
+        limit = Math.min(100, Math.max(1, parsed));
+      }
+    }
     const skip = (page - 1) * limit;
 
     await connectDB();
