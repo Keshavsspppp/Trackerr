@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Edit3, AlertTriangle } from 'lucide-react';
 import type { IApplication } from './ApplicationList';
+import { getInitialsColor } from './ApplicationList';
 import SourceBadge from './SourceBadge';
 import { formatStaticDate } from '@/src/lib/applicationUtils';
 
@@ -215,7 +216,24 @@ export default function KanbanBoard({ applications, onRefresh, onEdit }: KanbanB
                     }}
                   >
                     {/* Company Name */}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                      <div
+                        style={{
+                          width: '20px',
+                          height: '20px',
+                          borderRadius: '4px',
+                          backgroundColor: getInitialsColor(app.company).bg,
+                          color: getInitialsColor(app.company).text,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          fontSize: '10px',
+                          fontWeight: 700,
+                          flexShrink: 0,
+                        }}
+                      >
+                        {app.company.charAt(0).toUpperCase()}
+                      </div>
                       <h4
                         style={{
                           fontSize: '14px',

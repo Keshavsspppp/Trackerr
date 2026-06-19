@@ -23,9 +23,9 @@ export default function FunnelChart({ stats }: FunnelChartProps) {
 
   // Forward-funnel stages (Applied → Interview → Offer)
   const funnelStages: StageConfig[] = [
-    { label: 'Applied',   count: stats.applied,   color: '#3B82F6', bg: '#EFF6FF' },
-    { label: 'Interview', count: stats.interview, color: '#F59E0B', bg: '#FFFBEB' },
-    { label: 'Offer',     count: stats.offer,     color: '#10B981', bg: '#ECFDF5' },
+    { label: 'Applied',   count: stats.applied,   color: 'var(--color-applied-text)', bg: 'var(--color-applied-bg)' },
+    { label: 'Interview', count: stats.interview, color: 'var(--color-interview-text)', bg: 'var(--color-interview-bg)' },
+    { label: 'Offer',     count: stats.offer,     color: 'var(--color-offer-text)', bg: 'var(--color-offer-bg)' },
   ];
 
   // Rejected is shown separately below as a drop-off metric
@@ -42,11 +42,11 @@ export default function FunnelChart({ stats }: FunnelChartProps) {
   return (
     <div
       style={{
-        backgroundColor: '#FFFFFF',
+        backgroundColor: 'var(--color-surface)',
         borderRadius: '16px',
         padding: '28px',
-        border: '1px solid #E5E7EB',
-        boxShadow: '0 1px 4px rgba(0,0,0,0.06)',
+        border: '1px solid var(--color-border)',
+        boxShadow: 'var(--shadow-card)',
       }}
     >
       {/* Header */}
@@ -56,7 +56,7 @@ export default function FunnelChart({ stats }: FunnelChartProps) {
             margin: 0,
             fontSize: '16px',
             fontWeight: 700,
-            color: '#111827',
+            color: 'var(--color-text-primary)',
             letterSpacing: '-0.2px',
           }}
         >
@@ -69,9 +69,9 @@ export default function FunnelChart({ stats }: FunnelChartProps) {
             alignItems: 'center',
             gap: '6px',
             padding: '4px 12px',
-            background: '#FEF2F2',
+            background: 'var(--color-rejected-bg)',
             borderRadius: '999px',
-            border: '1px solid #FECACA',
+            border: '1px solid var(--color-rejected-dot)',
           }}
         >
           <span
@@ -79,12 +79,12 @@ export default function FunnelChart({ stats }: FunnelChartProps) {
               width: '8px',
               height: '8px',
               borderRadius: '50%',
-              background: '#EF4444',
+              background: 'var(--color-rejected-dot)',
               display: 'inline-block',
               flexShrink: 0,
             }}
           />
-          <span style={{ fontSize: '12px', fontWeight: 600, color: '#DC2626' }}>
+          <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--color-rejected-text)' }}>
             {rejected} Rejected
           </span>
         </div>
@@ -114,15 +114,15 @@ export default function FunnelChart({ stats }: FunnelChartProps) {
                     justifyContent: 'center',
                     gap: '6px',
                     padding: '4px 0',
-                    color: '#9CA3AF',
+                    color: 'var(--color-text-muted)',
                     fontSize: '12px',
                     fontWeight: 500,
                   }}
                 >
                   <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
-                    <path d="M6 1v10M2 7l4 4 4-4" stroke="#D1D5DB" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                    <path d="M6 1v10M2 7l4 4 4-4" stroke="var(--color-border)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
                   </svg>
-                  <span style={{ color: '#6B7280' }}>{convRate} conversion</span>
+                  <span style={{ color: 'var(--color-text-secondary)' }}>{convRate} conversion</span>
                 </div>
               )}
 
@@ -148,8 +148,8 @@ export default function FunnelChart({ stats }: FunnelChartProps) {
                     cursor: 'default',
                     transition: 'width 300ms ease, background-color 200ms ease, box-shadow 200ms ease',
                     boxShadow: isHovered
-                      ? `0 4px 16px ${stage.color}40`
-                      : '0 1px 3px rgba(0,0,0,0.06)',
+                      ? 'var(--shadow-card-hover)'
+                      : 'var(--shadow-card)',
                     position: 'relative',
                     overflow: 'hidden',
                   }}
@@ -160,7 +160,8 @@ export default function FunnelChart({ stats }: FunnelChartProps) {
                       style={{
                         position: 'absolute',
                         inset: 0,
-                        background: `linear-gradient(135deg, ${stage.color}12 0%, transparent 60%)`,
+                        backgroundColor: 'currentColor',
+                        opacity: 0.07,
                         pointerEvents: 'none',
                       }}
                     />
@@ -184,7 +185,7 @@ export default function FunnelChart({ stats }: FunnelChartProps) {
                     style={{
                       fontSize: '20px',
                       fontWeight: 800,
-                      color: isHovered ? '#FFFFFF' : '#111827',
+                      color: isHovered ? '#FFFFFF' : 'var(--color-text-primary)',
                       position: 'relative',
                       zIndex: 1,
                       letterSpacing: '-0.5px',
@@ -207,17 +208,17 @@ export default function FunnelChart({ stats }: FunnelChartProps) {
           alignItems: 'center',
           marginTop: '20px',
           paddingTop: '16px',
-          borderTop: '1px solid #F3F4F6',
+          borderTop: '1px solid var(--color-border)',
         }}
       >
-        <span style={{ fontSize: '12px', color: '#9CA3AF', fontWeight: 500 }}>
+        <span style={{ fontSize: '12px', color: 'var(--color-text-muted)', fontWeight: 500 }}>
           Overall offer rate
         </span>
         <span
           style={{
             fontSize: '14px',
             fontWeight: 700,
-            color: '#10B981',
+            color: 'var(--color-offer-text)',
           }}
         >
           {stats.applied === 0

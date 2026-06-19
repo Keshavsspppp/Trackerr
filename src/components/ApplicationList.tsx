@@ -87,6 +87,25 @@ function isStale(app: IApplication): boolean {
   return diff > 7 * 86400000;
 }
 
+export function getInitialsColor(name: string): { bg: string; text: string } {
+  const colors = [
+    { bg: '#EFF6FF', text: '#1D4ED8' }, // Blue
+    { bg: '#ECFDF5', text: '#047857' }, // Green
+    { bg: '#FDF2F8', text: '#BE185D' }, // Pink
+    { bg: '#F5F3FF', text: '#6D28D9' }, // Purple
+    { bg: '#FFF7ED', text: '#C2410C' }, // Orange
+    { bg: '#F0FDFA', text: '#0F766E' }, // Teal
+    { bg: '#FEF2F2', text: '#B91C1C' }, // Red
+    { bg: '#F8FAFC', text: '#475569' }, // Slate
+  ];
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) {
+    hash = name.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  const index = Math.abs(hash) % colors.length;
+  return colors[index];
+}
+
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export default function ApplicationList({
@@ -507,7 +526,24 @@ export default function ApplicationList({
                       >
                         {/* Company */}
                         <td style={tdStyle}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <div
+                              style={{
+                                width: '24px',
+                                height: '24px',
+                                borderRadius: '6px',
+                                backgroundColor: getInitialsColor(app.company).bg,
+                                color: getInitialsColor(app.company).text,
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                fontSize: '11px',
+                                fontWeight: 700,
+                                flexShrink: 0,
+                              }}
+                            >
+                              {app.company.charAt(0).toUpperCase()}
+                            </div>
                             <span style={{ fontWeight: 600, color: "var(--color-text-primary)" }}>
                               {app.company}
                             </span>
@@ -762,6 +798,23 @@ export default function ApplicationList({
                   {/* Company & Role */}
                   <div>
                     <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
+                      <div
+                        style={{
+                          width: '24px',
+                          height: '24px',
+                          borderRadius: '6px',
+                          backgroundColor: getInitialsColor(app.company).bg,
+                          color: getInitialsColor(app.company).text,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          fontSize: '11px',
+                          fontWeight: 700,
+                          flexShrink: 0,
+                        }}
+                      >
+                        {app.company.charAt(0).toUpperCase()}
+                      </div>
                       <span style={{ fontSize: "16px", fontWeight: 700, color: "var(--color-text-primary)" }}>
                         {app.company}
                       </span>

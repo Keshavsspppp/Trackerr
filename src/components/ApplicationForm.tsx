@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import type { IApplication } from './ApplicationList';
 
 interface ApplicationFormProps {
@@ -68,8 +68,9 @@ export default function ApplicationForm({
   const [fields, setFields] = useState<FormFields>(initialFields);
   const [errors, setErrors] = useState<FormErrors>({});
   const [submitting, setSubmitting] = useState(false);
+  const companyInputRef = useRef<HTMLInputElement>(null);
 
-  // Sync with application prop when it changes (for edit mode)
+  // Sync with application prop when it changes (for edit mode) and handle autofocus
   useEffect(() => {
     if (application) {
       setFields({
@@ -83,6 +84,14 @@ export default function ApplicationForm({
     } else {
       setFields(initialFields);
     }
+
+    // Autofocus after a short delay to accommodate transition animations
+    const timer = setTimeout(() => {
+      if (companyInputRef.current) {
+        companyInputRef.current.focus();
+      }
+    }, 100);
+    return () => clearTimeout(timer);
   }, [application]);
 
   const isDisabled =
@@ -208,6 +217,7 @@ export default function ApplicationForm({
         <input
           id="company"
           name="company"
+          ref={companyInputRef}
           type="text"
           value={fields.company}
           onChange={handleChange}
@@ -388,12 +398,32 @@ export default function ApplicationForm({
             cursor: isDisabled ? 'not-allowed' : 'pointer',
             borderRadius: 'var(--radius-btn)',
             border: 'none',
-            background: isDisabled ? '#93C5FD' : 'var(--color-accent)',
+            background: isDisabled && !submitting ? '#93C5FD' : 'var(--color-accent)',
             color: '#FFFFFF',
             opacity: isDisabled ? 0.7 : 1,
           }}
         >
-          {submitting ? 'Saving…' : 'Save →'}
+          {submitting ? (
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+              <svg
+                style={{
+                  animation: 'spin 1s linear infinite',
+                  width: '16px',
+                  height: '16px',
+                }}
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="3"
+              >
+                <circle cx="12" cy="12" r="10" stroke="rgba(255,255,255,0.25)" />
+                <path d="M12 2a10 10 0 0 1 10 10" />
+              </svg>
+              <span>Saving…</span>
+            </div>
+          ) : (
+            'Save →'
+          )}
         </button>
       </div>
     </form>

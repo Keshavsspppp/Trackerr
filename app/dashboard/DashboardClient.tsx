@@ -58,13 +58,79 @@ export default function DashboardClient({
   const [editingApplication, setEditingApplication] = useState<IApplication | undefined>(undefined);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  // Load saved view mode from localStorage on mount
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [showShortcutsModal, setShowShortcutsModal] = useState(false);
+
+  // Load saved view mode and sidebar configuration from localStorage on mount
   useEffect(() => {
     const savedView = localStorage.getItem('trackerr_view_mode');
     if (savedView === 'table' || savedView === 'kanban') {
       setViewMode(savedView);
     }
+    const savedSidebar = localStorage.getItem('trackerr_sidebar_open');
+    if (savedSidebar !== null) {
+      setSidebarOpen(savedSidebar === 'true');
+    }
   }, []);
+
+  // Keyboard Shortcuts Hook
+  useEffect(() => {
+    function handleKeyDown(e: KeyboardEvent) {
+      const target = e.target as HTMLElement;
+      if (
+        target.tagName === 'INPUT' ||
+        target.tagName === 'SELECT' ||
+        target.tagName === 'TEXTAREA' ||
+        target.isContentEditable
+      ) {
+        if (e.key === 'Escape') {
+          setSlideOverOpen(false);
+          setEditingApplication(undefined);
+          target.blur();
+        }
+        return;
+      }
+
+      if (e.key === 'n' || e.key === 'N') {
+        e.preventDefault();
+        setEditingApplication(undefined);
+        setSlideOverOpen(true);
+      } else if (e.key === '/') {
+        e.preventDefault();
+        const searchInput = document.querySelector('input[type="text"][placeholder*="Search"]') as HTMLInputElement;
+        if (searchInput) {
+          searchInput.focus();
+          searchInput.select();
+        }
+      } else if (e.key === '1') {
+        setSelectedStatus(undefined);
+      } else if (e.key === '2') {
+        setSelectedStatus('Applied');
+      } else if (e.key === '3') {
+        setSelectedStatus('Interview');
+      } else if (e.key === '4') {
+        setSelectedStatus('Offer');
+      } else if (e.key === 'Escape') {
+        setSlideOverOpen(false);
+        setEditingApplication(undefined);
+        setShowShortcutsModal(false);
+      } else if (e.key === '?') {
+        e.preventDefault();
+        setShowShortcutsModal((prev) => !prev);
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
+  function toggleSidebar() {
+    setSidebarOpen((prev) => {
+      const next = !prev;
+      localStorage.setItem('trackerr_sidebar_open', String(next));
+      return next;
+    });
+  }
 
   function handleViewChange(newView: 'table' | 'kanban') {
     setViewMode(newView);
@@ -101,7 +167,11 @@ export default function DashboardClient({
   return (
     <div className="layout-root">
       {/* ── Sidebar (desktop only) ── */}
-      <aside className="layout-sidebar" aria-label="Main navigation">
+      <aside
+        className="layout-sidebar"
+        aria-label="Main navigation"
+        style={!sidebarOpen ? { display: 'none' } : undefined}
+      >
         {/* Wordmark with Logo */}
         <div
           style={{
@@ -110,21 +180,44 @@ export default function DashboardClient({
             flexShrink: 0,
             display: "flex",
             alignItems: "center",
-            gap: "10px",
+            justifyContent: "space-between",
+            width: "100%",
           }}
         >
-          <img src="/logo.png" alt="Trackerr Logo" width="28" height="28" style={{ borderRadius: "50%" }} />
-          <span
+          <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+            <img src="/logo.png" alt="Trackerr Logo" width="28" height="28" style={{ borderRadius: "50%" }} />
+            <span
+              style={{
+                fontSize: "20px",
+                fontWeight: 700,
+                color: "var(--color-text-primary)",
+                letterSpacing: "-0.3px",
+              }}
+            >
+              Trackerr
+              <span style={{ color: "var(--color-accent)" }}>.</span>
+            </span>
+          </div>
+          <button
+            onClick={toggleSidebar}
+            aria-label="Collapse sidebar"
             style={{
-              fontSize: "20px",
-              fontWeight: 700,
-              color: "var(--color-text-primary)",
-              letterSpacing: "-0.3px",
+              background: "none",
+              border: "none",
+              cursor: "pointer",
+              padding: "4px",
+              color: "var(--color-text-secondary)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              borderRadius: "4px",
+              transition: "background 150ms ease",
             }}
+            onMouseEnter={(e) => e.currentTarget.style.background = "var(--color-bg)"}
+            onMouseLeave={(e) => e.currentTarget.style.background = "none"}
           >
-            Trackerr
-            <span style={{ color: "var(--color-accent)" }}>.</span>
-          </span>
+            <Menu size={18} />
+          </button>
         </div>
 
         {/* Nav links */}
@@ -227,7 +320,10 @@ export default function DashboardClient({
       </aside>
 
       {/* ── Main content area ── */}
-      <div className="layout-main">
+      <div
+        className="layout-main"
+        style={!sidebarOpen ? { marginLeft: 0 } : undefined}
+      >
         {/* Mobile top header */}
         <header
           style={{
@@ -403,17 +499,42 @@ export default function DashboardClient({
               marginBottom: "28px",
             }}
           >
-            <h1
-              style={{
-                margin: 0,
-                fontSize: "24px",
-                fontWeight: 700,
-                color: "var(--color-text-primary)",
-                letterSpacing: "-0.3px",
-              }}
-            >
-              {view === "dashboard" ? "Dashboard" : "All Internships"}
-            </h1>
+            <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+              {!sidebarOpen && (
+                <button
+                  onClick={toggleSidebar}
+                  aria-label="Expand sidebar"
+                  className="desktop-only-menu-btn"
+                  style={{
+                    background: "none",
+                    border: "1px solid var(--color-border)",
+                    borderRadius: "8px",
+                    cursor: "pointer",
+                    padding: "8px",
+                    color: "var(--color-text-primary)",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    transition: "background 150ms ease",
+                  }}
+                  onMouseEnter={(e) => e.currentTarget.style.background = "var(--color-surface)"}
+                  onMouseLeave={(e) => e.currentTarget.style.background = "none"}
+                >
+                  <Menu size={20} />
+                </button>
+              )}
+              <h1
+                style={{
+                  margin: 0,
+                  fontSize: "24px",
+                  fontWeight: 700,
+                  color: "var(--color-text-primary)",
+                  letterSpacing: "-0.3px",
+                }}
+              >
+                {view === "dashboard" ? "Dashboard" : "All Internships"}
+              </h1>
+            </div>
             {/* Desktop "+ Add Internship" button */}
             <button
               onClick={() => {
@@ -552,13 +673,16 @@ export default function DashboardClient({
                       color: "var(--color-text-secondary)",
                       textTransform: "uppercase",
                       letterSpacing: "0.06em",
+                      display: "flex",
+                      alignItems: "center",
+                      flexWrap: "wrap",
+                      gap: "8px",
                     }}
                   >
-                    {view === "all" ? `All Internships (${filteredApplications.length})` : "Internships"}
+                    <span>{view === "all" ? `All Internships (${filteredApplications.length})` : "Internships"}</span>
                     {view === "dashboard" && selectedStatus && (
                       <span
                         style={{
-                          marginLeft: "8px",
                           fontWeight: 400,
                           textTransform: "none",
                           letterSpacing: 0,
@@ -568,6 +692,24 @@ export default function DashboardClient({
                         — {selectedStatus} ({filteredApplications.length})
                       </span>
                     )}
+                    <span 
+                      onClick={() => setShowShortcutsModal(true)}
+                      style={{ 
+                        marginLeft: "8px", 
+                        fontSize: "11px", 
+                        color: "var(--color-text-muted)", 
+                        fontWeight: 400, 
+                        textTransform: "none",
+                        letterSpacing: 0,
+                        cursor: "pointer",
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: "4px"
+                      }}
+                      title="Click to view shortcuts help"
+                    >
+                      (Press <kbd style={{ padding: "1px 5px", border: "1px solid var(--color-border)", borderRadius: "4px", background: "var(--color-bg)", fontSize: "10px", fontWeight: 700, fontFamily: "var(--font-mono, monospace)" }}>?</kbd> for shortcuts)
+                    </span>
                   </h2>
 
                   {/* View Toggle and CSV buttons */}
@@ -657,6 +799,85 @@ export default function DashboardClient({
           showToast={showToast}
         />
       </SlideOver>
+
+      {/* Keyboard Shortcuts Modal */}
+      {showShortcutsModal && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            backgroundColor: 'rgba(0,0,0,0.5)',
+            backdropFilter: 'blur(4px)',
+            zIndex: 100,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+          onClick={() => setShowShortcutsModal(false)}
+        >
+          <div
+            style={{
+              backgroundColor: 'var(--color-surface)',
+              border: '1px solid var(--color-border)',
+              borderRadius: '12px',
+              width: '90%',
+              maxWidth: '400px',
+              padding: '24px',
+              boxShadow: 'var(--shadow-modal)',
+            }}
+            onClick={e => e.stopPropagation()}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', borderBottom: '1px solid var(--color-border)', paddingBottom: '12px' }}>
+              <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 700, color: 'var(--color-text-primary)' }}>
+                Keyboard Shortcuts
+              </h3>
+              <button
+                onClick={() => setShowShortcutsModal(false)}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '18px', color: 'var(--color-text-secondary)', padding: '4px' }}
+              >
+                ✕
+              </button>
+            </div>
+            
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              {[
+                { label: 'Add new internship', keys: ['N'] },
+                { label: 'Search internships', keys: ['/'] },
+                { label: 'Filter: All', keys: ['1'] },
+                { label: 'Filter: Applied', keys: ['2'] },
+                { label: 'Filter: Interview', keys: ['3'] },
+                { label: 'Filter: Offer', keys: ['4'] },
+                { label: 'Close modal / cancel', keys: ['Esc'] },
+                { label: 'Toggle this help panel', keys: ['?'] },
+              ].map(item => (
+                <div key={item.label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ fontSize: '13px', color: 'var(--color-text-secondary)' }}>{item.label}</span>
+                  <div style={{ display: 'flex', gap: '4px' }}>
+                    {item.keys.map(k => (
+                      <kbd
+                        key={k}
+                        style={{
+                          fontFamily: 'var(--font-mono, monospace)',
+                          fontSize: '11px',
+                          background: 'var(--color-bg)',
+                          border: '1px solid var(--color-border)',
+                          borderRadius: '4px',
+                          padding: '2px 6px',
+                          color: 'var(--color-text-primary)',
+                          boxShadow: '0 1px 1px rgba(0,0,0,0.1)',
+                          fontWeight: 700,
+                        }}
+                      >
+                        {k}
+                      </kbd>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

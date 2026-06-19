@@ -12,10 +12,41 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Trackerr",
-  description: "Track your internship applications in one place",
+  metadataBase: new URL('https://trackerr-lovat.vercel.app'),
+  title: "Trackerr — Internship Tracker",
+  description: "Track every application, land the internship. Free, no ads, your data.",
   icons: {
     icon: '/logo.png',
+  },
+  manifest: '/site.webmanifest',
+  openGraph: {
+    title: 'Trackerr — Internship Tracker',
+    description: 'Track every application, land the internship. Free, no ads, your data.',
+    url: 'https://trackerr-lovat.vercel.app',
+    siteName: 'Trackerr',
+    images: [
+      {
+        url: '/logo.png', // Fallback to logo or og-image if created
+        width: 512,
+        height: 512,
+        alt: 'Trackerr Logo',
+      },
+    ],
+    locale: 'en_US',
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary',
+    title: 'Trackerr — Internship Tracker',
+    description: 'Track every application, land the internship. Free, no ads, your data.',
+    images: ['/logo.png'],
+  },
+  robots: {
+    index: true,
+    follow: true,
+  },
+  alternates: {
+    canonical: 'https://trackerr-lovat.vercel.app',
   },
 };
 

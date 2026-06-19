@@ -1,6 +1,7 @@
 'use client';
 
 import { signIn } from 'next-auth/react';
+import { Lock, Shield, Database, Sparkles } from 'lucide-react';
 
 export default function Home() {
   return (
@@ -11,19 +12,41 @@ export default function Home() {
         alignItems: 'center',
         justifyContent: 'center',
         minHeight: '100vh',
-        background: 'linear-gradient(135deg, #F0F4FF 0%, #FFFFFF 100%)',
-        padding: '24px',
+        background: 'linear-gradient(180deg, #F3F4F6 0%, #FFFFFF 100%)',
+        padding: '32px 24px',
+        fontFamily: 'var(--font-inter, "Inter", system-ui, sans-serif)',
       }}
     >
+      {/* Badge at the top */}
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '6px',
+          padding: '6px 14px',
+          background: '#EFF6FF',
+          border: '1px solid #BFDBFE',
+          borderRadius: '999px',
+          fontSize: '12px',
+          fontWeight: 600,
+          color: '#1D4ED8',
+          marginBottom: '24px',
+          boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
+        }}
+      >
+        <Sparkles size={13} />
+        <span>Free · No Ads · Your Data</span>
+      </div>
+
       {/* Wordmark with Logo */}
-      <div style={{ marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '10px', justifyContent: 'center' }}>
+      <div style={{ marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '10px', justifyContent: 'center' }}>
         <img src="/logo.png" alt="Trackerr Logo" width="36" height="36" style={{ borderRadius: '50%' }} />
         <span
           style={{
-            fontSize: '28px',
-            fontWeight: 700,
+            fontSize: '32px',
+            fontWeight: 800,
             color: '#111827',
-            letterSpacing: '-0.5px',
+            letterSpacing: '-1.0px',
           }}
         >
           Trackerr<span style={{ color: '#3B82F6' }}>.</span>
@@ -31,18 +54,97 @@ export default function Home() {
       </div>
 
       {/* Tagline */}
+      <h1
+        style={{
+          fontSize: '24px',
+          fontWeight: 700,
+          color: '#111827',
+          textAlign: 'center',
+          marginBottom: '8px',
+          lineHeight: 1.3,
+          maxWidth: '400px',
+          letterSpacing: '-0.5px',
+        }}
+      >
+        Track every application.<br />Land the internship.
+      </h1>
+
+      {/* Subtitle */}
       <p
         style={{
-          fontSize: '20px',
-          color: '#6B7280',
+          fontSize: '14px',
+          color: '#4B5563',
           textAlign: 'center',
-          marginBottom: '40px',
-          lineHeight: 1.4,
+          marginBottom: '24px',
+          lineHeight: 1.5,
           maxWidth: '360px',
         }}
       >
-        Track every application. Land the internship.
+        See exactly where you stand — applied, interviewing, offers. All in one place.
       </p>
+
+      {/* Preview Strip */}
+      <div
+        style={{
+          width: '100%',
+          maxWidth: '340px',
+          background: 'var(--color-surface, #FFFFFF)',
+          borderRadius: '12px',
+          padding: '12px 16px',
+          border: '1px solid var(--color-border, #E5E7EB)',
+          boxShadow: 'var(--shadow-card, 0 1px 3px rgba(0,0,0,0.08))',
+          marginBottom: '24px',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '8px',
+        }}
+      >
+        {[
+          { company: 'Google', role: 'SWE Intern', status: 'Interview', bg: 'var(--color-interview-bg, #FEF3C7)', text: 'var(--color-interview-text, #B45309)', dot: 'var(--color-interview-dot, #F59E0B)' },
+          { company: 'Stripe', role: 'Backend Intern', status: 'Offer', bg: 'var(--color-offer-bg, #D1FAE5)', text: 'var(--color-offer-text, #065F46)', dot: 'var(--color-offer-dot, #10B981)' },
+          { company: 'Meta', role: 'Product Intern', status: 'Applied', bg: 'var(--color-applied-bg, #DBEAFE)', text: 'var(--color-applied-text, #1D4ED8)', dot: 'var(--color-applied-dot, #3B82F6)' },
+        ].map((item) => (
+          <div
+            key={item.company}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              padding: '6px 0',
+              borderBottom: item.company === 'Meta' ? 'none' : '1px solid #F3F4F6',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span
+                style={{
+                  width: '8px',
+                  height: '8px',
+                  borderRadius: '50%',
+                  background: item.dot,
+                }}
+              />
+              <span style={{ fontSize: '13px', fontWeight: 600, color: '#111827' }}>
+                {item.company}
+              </span>
+              <span style={{ fontSize: '12px', color: '#6B7280' }}>
+                {item.role}
+              </span>
+            </div>
+            <span
+              style={{
+                fontSize: '11px',
+                fontWeight: 600,
+                padding: '2px 8px',
+                borderRadius: '999px',
+                background: item.bg,
+                color: item.text,
+              }}
+            >
+              {item.status}
+            </span>
+          </div>
+        ))}
+      </div>
 
       {/* Google sign-in button */}
       <button
@@ -53,9 +155,9 @@ export default function Home() {
           justifyContent: 'center',
           gap: '10px',
           width: '100%',
-          maxWidth: '320px',
+          maxWidth: '340px',
           height: '48px',
-          background: '#3B82F6',
+          background: 'var(--color-accent, #3B82F6)',
           color: '#FFFFFF',
           border: 'none',
           borderRadius: '8px',
@@ -63,13 +165,14 @@ export default function Home() {
           fontWeight: 600,
           cursor: 'pointer',
           transition: 'background 150ms ease',
-          marginBottom: '48px',
+          marginBottom: '24px',
+          boxShadow: '0 4px 6px -1px rgba(59, 130, 246, 0.2)',
         }}
         onMouseEnter={(e) => {
-          (e.currentTarget as HTMLButtonElement).style.background = '#2563EB';
+          (e.currentTarget as HTMLButtonElement).style.background = 'var(--color-accent-hover, #2563EB)';
         }}
         onMouseLeave={(e) => {
-          (e.currentTarget as HTMLButtonElement).style.background = '#3B82F6';
+          (e.currentTarget as HTMLButtonElement).style.background = 'var(--color-accent, #3B82F6)';
         }}
       >
         {/* Google "G" icon */}
@@ -110,54 +213,33 @@ export default function Home() {
             />
           </svg>
         </span>
-        Sign in with Google
+        Continue with Google
       </button>
 
-      {/* Feature bullets */}
-      <ul
+      {/* Trust Badges */}
+      <div
         style={{
-          listStyle: 'none',
           display: 'flex',
-          flexDirection: 'column',
-          gap: '12px',
-          marginBottom: '32px',
-          padding: 0,
-          width: '100%',
-          maxWidth: '320px',
-        }}
-      >
-        {[
-          { icon: '🎓', text: 'Track all internship applications in one place' },
-          { icon: '📈', text: 'Dashboard stats & conversion rate' },
-          { icon: '📧', text: 'Email reminders for stale applications' },
-        ].map(({ icon, text }) => (
-          <li
-            key={text}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '10px',
-              fontSize: '14px',
-              color: '#374151',
-            }}
-          >
-            <span style={{ fontSize: '18px', lineHeight: 1 }}>{icon}</span>
-            {text}
-          </li>
-        ))}
-      </ul>
-
-      {/* Caption */}
-      <p
-        style={{
+          gap: '16px',
           fontSize: '12px',
-          color: '#9CA3AF',
-          textAlign: 'center',
-          letterSpacing: '0.02em',
+          color: '#6B7280',
+          justifyContent: 'center',
+          flexWrap: 'wrap',
         }}
       >
-        Free · No ads · Your data
-      </p>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+          <Lock size={12} />
+          <span>Secure OAuth</span>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+          <Shield size={12} />
+          <span>No Ads</span>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+          <Database size={12} />
+          <span>Your Data</span>
+        </div>
+      </div>
     </main>
   );
 }

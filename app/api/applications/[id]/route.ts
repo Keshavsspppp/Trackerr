@@ -71,7 +71,7 @@ export async function PATCH(
     const updated = await Application.findOneAndUpdate(
       { _id: id, userId },
       { $set: updateFields },
-      { new: true }
+      { returnDocument: 'after' }
     );
 
     if (!updated) {
