@@ -33,6 +33,7 @@ vi.mock('@/src/models/Application', () => {
 import { getToken } from 'next-auth/jwt';
 import { Application } from '@/src/models/Application';
 import { PATCH, DELETE } from './route';
+import { rateLimitMap } from '@/src/lib/rateLimit';
 
 const mockGetToken = vi.mocked(getToken);
 const mockFindOneAndUpdate = vi.mocked(Application.findOneAndUpdate);
@@ -94,6 +95,7 @@ function makeObjectId(): string {
 // ---------------------------------------------------------------------------
 beforeEach(() => {
   vi.clearAllMocks();
+  rateLimitMap.clear();
 });
 
 // ===========================================================================

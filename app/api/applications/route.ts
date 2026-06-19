@@ -2,46 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getToken } from 'next-auth/jwt';
 import { connectDB } from '@/src/lib/mongodb';
 import { Application } from '@/src/models/Application';
-import { isValidStatus, type ValidStatus } from '@/src/lib/validation';
+import { isValidStatus, type ValidStatus, createApplicationSchema } from '@/src/lib/validation';
 import { logError } from '@/src/lib/logger';
-
-// ---------------------------------------------------------------------------
-// Simple in-memory rate limiter for POST requests
-// ---------------------------------------------------------------------------
-import { rateLimitMap } from '@/src/lib/rateLimit';
-
-const RATE_LIMIT_WINDOW_MS = 60 * 1000; // 1 minute
-const RATE_LIMIT_MAX_REQUESTS = 10;     // 10 manual/extension creates per minute
-const RATE_LIMIT_CSV_MAX = 100;         // 100 csv_import creates per minute
-
-function checkRateLimit(
-  userId: string,
-  isCsvImport: boolean
-): { allowed: boolean; retryAfter?: number } {
-  // CSV bulk imports are already authenticated — apply a generous separate cap
-  // so that importing up to 100 rows in one go never triggers a 429.
-  const limit = isCsvImport ? RATE_LIMIT_CSV_MAX : RATE_LIMIT_MAX_REQUESTS;
-  const key = isCsvImport ? `${userId}:csv` : userId;
-
-  const now = Date.now();
-  const userLimit = rateLimitMap.get(key);
-
-  if (!userLimit || now > userLimit.resetAt) {
-    // First request or window expired — reset
-    rateLimitMap.set(key, { count: 1, resetAt: now + RATE_LIMIT_WINDOW_MS });
-    return { allowed: true };
-  }
-
-  if (userLimit.count >= limit) {
-    // Rate limit exceeded
-    const retryAfter = Math.ceil((userLimit.resetAt - now) / 1000);
-    return { allowed: false, retryAfter };
-  }
-
-  // Increment count
-  userLimit.count++;
-  return { allowed: true };
-}
+import { checkRateLimit } from '@/src/lib/rateLimit';
 
 // ---------------------------------------------------------------------------
 // POST /api/applications — create a new application
@@ -57,13 +20,21 @@ export async function POST(req: NextRequest) {
     const userEmail = token.email as string | undefined;
 
     const body = await req.json();
-    const { company, role, status, appliedDate, jobUrl, notes, source, capturedAt, originalUrl } = body;
+    const result = createApplicationSchema.safeParse(body);
+    if (!result.success) {
+      const errorMessage = result.error.errors[0]?.message ?? 'Invalid input';
+      return NextResponse.json({ error: errorMessage }, { status: 400 });
+    }
+
+    const { company, role, status, appliedDate, jobUrl, notes, source, capturedAt, originalUrl } = result.data;
 
     // CSV bulk imports get a higher rate-limit cap (100/min) so that importing
     // a full spreadsheet never returns 429. Manual/extension adds keep the
     // stricter 10/min cap to prevent abuse.
     const isCsvImport = source === 'csv_import';
-    const rateLimitResult = checkRateLimit(userId, isCsvImport);
+    const limit = isCsvImport ? 100 : 10;
+    const keyPrefix = isCsvImport ? 'csv' : '';
+    const rateLimitResult = checkRateLimit(userId, limit, keyPrefix);
     if (!rateLimitResult.allowed) {
       return NextResponse.json(
         { error: 'Too many requests. Please try again later.' },
@@ -80,79 +51,6 @@ export async function POST(req: NextRequest) {
     if (!userEmail) {
       return NextResponse.json(
         { error: 'User email not available in session' },
-        { status: 400 }
-      );
-    }
-
-    // body already parsed above (before rate-limit check)
-
-    // Validate required fields — must be non-empty and non-whitespace
-    if (!company || typeof company !== 'string' || !company.trim()) {
-      return NextResponse.json(
-        { error: 'company and role are required' },
-        { status: 400 }
-      );
-    }
-    if (!role || typeof role !== 'string' || !role.trim()) {
-      return NextResponse.json(
-        { error: 'company and role are required' },
-        { status: 400 }
-      );
-    }
-
-    // Validate optional status field
-    if (status !== undefined && !isValidStatus(status)) {
-      return NextResponse.json(
-        {
-          error:
-            'Invalid status value. Must be one of: Applied, Interview, Offer, Rejected',
-        },
-        { status: 400 }
-      );
-    }
-
-    // Validate jobUrl — must be a string when provided
-    if (jobUrl !== undefined && typeof jobUrl !== 'string') {
-      return NextResponse.json(
-        { error: 'jobUrl must be a string' },
-        { status: 400 }
-      );
-    }
-
-    // Validate appliedDate — must parse to a real date when provided
-    if (appliedDate !== undefined) {
-      const parsed = new Date(appliedDate);
-      if (isNaN(parsed.getTime())) {
-        return NextResponse.json(
-          { error: 'appliedDate must be a valid date string' },
-          { status: 400 }
-        );
-      }
-    }
-
-    // Validate source — must be one of the allowed values when provided
-    if (source !== undefined && !['manual', 'extension', 'csv_import'].includes(source)) {
-      return NextResponse.json(
-        { error: 'source must be one of: manual, extension, csv_import' },
-        { status: 400 }
-      );
-    }
-
-    // Validate capturedAt — must parse to a real date when provided
-    if (capturedAt !== undefined) {
-      const parsed = new Date(capturedAt);
-      if (isNaN(parsed.getTime())) {
-        return NextResponse.json(
-          { error: 'capturedAt must be a valid date string' },
-          { status: 400 }
-        );
-      }
-    }
-
-    // Validate originalUrl — must be a string when provided
-    if (originalUrl !== undefined && typeof originalUrl !== 'string') {
-      return NextResponse.json(
-        { error: 'originalUrl must be a string' },
         { status: 400 }
       );
     }
