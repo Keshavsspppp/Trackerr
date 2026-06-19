@@ -60,6 +60,7 @@ next-env.d.ts
 *.sln
 *.sw?
 
-# markdown files - ignore all except README.md
+# markdown files - ignore all except README.md and CONTRIBUTING.md
 *.md
 !README.md
+!CONTRIBUTING.md

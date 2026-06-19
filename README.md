@@ -205,6 +205,9 @@ Deploying to Vercel is seamless:
    `https://your-domain.vercel.app/api/auth/callback/google`
 5. Change `NEXTAUTH_URL` in Vercel to your live domain: `https://your-domain.vercel.app`.
 
+> [!WARNING]
+> **MongoDB Network Access Whitelist**: While developing locally, allowing all IPs (`0.0.0.0/0`) is common practice. In production, however, lock down your MongoDB Atlas network access to only accept connections from Vercel's IP ranges (or utilize Vercel's official MongoDB integration/peer connections) to prevent brute-force database attacks.
+
 ### 2. Scheduled Cron Job
 The daily cron job configuration is defined in `vercel.json` and runs automatically every day at 09:00 UTC. 
 
