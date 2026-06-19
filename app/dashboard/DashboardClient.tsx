@@ -459,6 +459,7 @@ export default function DashboardClient({
     setEditingApplication(undefined);
     if (isDemo && newApp) {
       setDemoApps((prev) => [newApp, ...prev]);
+      showToast("[Demo Sandbox] Temporary internship created — sign up to save permanently.", "success");
     } else {
       handleRefresh();
     }
@@ -472,6 +473,7 @@ export default function DashboardClient({
       setDemoApps((prev) =>
         prev.map((app) => (app._id === updatedApp._id ? updatedApp : app))
       );
+      showToast("[Demo Sandbox] Temporary internship updated — sign up to save permanently.", "success");
     } else {
       handleRefresh();
     }

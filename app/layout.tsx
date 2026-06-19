@@ -29,10 +29,10 @@ export const metadata: Metadata = {
     siteName: 'Trackerr',
     images: [
       {
-        url: '/logo.png', // Fallback to logo or og-image if created
-        width: 512,
-        height: 512,
-        alt: 'Trackerr Logo',
+        url: '/og-image.png',
+        width: 1200,
+        height: 630,
+        alt: 'Trackerr — Internship Tracker',
       },
     ],
     locale: 'en_US',
@@ -42,7 +42,7 @@ export const metadata: Metadata = {
     card: 'summary_large_image',
     title: 'Trackerr — Internship Tracker',
     description: 'Track every application, land the internship. Free, no ads, your data.',
-    images: ['/logo.png'],
+    images: ['/og-image.png'],
   },
   robots: {
     index: true,
@@ -66,6 +66,22 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={inter.variable}>
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              try {
+                const theme = localStorage.getItem('trackerr_theme');
+                if (theme === 'dark' || (theme !== 'light' && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                  document.documentElement.setAttribute('data-theme', 'dark');
+                } else {
+                  document.documentElement.setAttribute('data-theme', 'light');
+                }
+              } catch (e) {}
+            `,
+          }}
+        />
+      </head>
       <body suppressHydrationWarning>
         <Providers>
           <ToastProvider>{children}</ToastProvider>
