@@ -13,7 +13,7 @@ const inter = Inter({
 
 export const metadata: Metadata = {
   title: "Trackerr",
-  description: "Track your job applications in one place",
+  description: "Track your internship applications in one place",
   icons: {
     icon: '/favicon.ico',
   },

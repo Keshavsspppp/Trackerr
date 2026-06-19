@@ -14,10 +14,16 @@ import { useToast } from "@/src/components/Toast";
 import ViewToggle from "@/src/components/ViewToggle";
 import KanbanBoard from "@/src/components/KanbanBoard";
 import FunnelChart from "@/src/components/FunnelChart";
-import VelocityChart from "@/src/components/VelocityChart";
 import CSVImporter from "@/src/components/CSVImporter";
 import { exportApplicationsToCSV } from "@/src/lib/csvExport";
 import type { IApplicationStats } from "@/app/api/applications/stats/route";
+import dynamic from "next/dynamic";
+import LoadingSkeleton from "@/src/components/LoadingSkeleton";
+
+const VelocityChart = dynamic(() => import("@/src/components/VelocityChart"), {
+  ssr: false,
+  loading: () => <LoadingSkeleton variant="chart" />,
+});
 
 interface DashboardClientProps {
   applications: IApplication[];
@@ -130,7 +136,7 @@ export default function DashboardClient({
             <span aria-hidden="true" style={{ fontSize: "16px" }}>
               📋
             </span>
-            All Applications
+            All Internships
           </button>
         </nav>
 
@@ -337,7 +343,7 @@ export default function DashboardClient({
                   style={{ marginTop: "4px" }}
                   onClick={() => { setView("all"); setSelectedStatus(undefined); setMobileMenuOpen(false); }}
                 >
-                  <span aria-hidden="true">📋</span> All Applications
+                  <span aria-hidden="true">📋</span> All Internships
                 </button>
               </nav>
               <div
@@ -385,7 +391,7 @@ export default function DashboardClient({
                 letterSpacing: "-0.3px",
               }}
             >
-              {view === "dashboard" ? "Dashboard" : "All Applications"}
+              {view === "dashboard" ? "Dashboard" : "All Internships"}
             </h1>
             {/* Desktop "+ Add Application" button */}
             <button
@@ -415,7 +421,7 @@ export default function DashboardClient({
                   "#3B82F6";
               }}
             >
-              + Add Application
+              + Add Internship
             </button>
           </div>
 
@@ -482,7 +488,7 @@ export default function DashboardClient({
                   letterSpacing: "0.06em",
                 }}
               >
-                {view === "all" ? `All Applications (${filteredApplications.length})` : "Applications"}
+                {view === "all" ? `All Internships (${filteredApplications.length})` : "Internships"}
                 {view === "dashboard" && selectedStatus && (
                   <span
                     style={{
@@ -558,7 +564,7 @@ export default function DashboardClient({
       <SlideOver
         isOpen={slideOverOpen}
         onClose={() => setSlideOverOpen(false)}
-        title="← Add Application"
+        title="← Add Internship"
       >
         <ApplicationForm
           onCancel={() => setSlideOverOpen(false)}

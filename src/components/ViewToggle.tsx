@@ -10,7 +10,6 @@ export default function ViewToggle({ currentView, onViewChange }: ViewToggleProp
     padding: '8px 16px',
     fontSize: '14px',
     fontWeight: 600,
-    border: 'none',
     borderRadius: currentView === view ? '6px' : '6px',
     cursor: 'pointer',
     transition: 'all 150ms ease',

@@ -40,7 +40,7 @@ export default function Home() {
           maxWidth: '360px',
         }}
       >
-        Track every application. Land the job.
+        Track every application. Land the internship.
       </p>
 
       {/* Google sign-in button */}
@@ -126,8 +126,8 @@ export default function Home() {
         }}
       >
         {[
-          { icon: '📊', text: 'Track all applications in one place' },
-          { icon: '📈', text: 'Dashboard stats & interview rate' },
+          { icon: '🎓', text: 'Track all internship applications in one place' },
+          { icon: '📈', text: 'Dashboard stats & conversion rate' },
           { icon: '📧', text: 'Email reminders for stale applications' },
         ].map(({ icon, text }) => (
           <li

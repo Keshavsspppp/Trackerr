@@ -37,6 +37,7 @@ export default async function DashboardPage() {
     appliedDate: doc.appliedDate ? doc.appliedDate.toISOString() : undefined,
     jobUrl: doc.jobUrl ?? undefined,
     notes: doc.notes ?? undefined,
+    source: (doc as any).source ?? undefined,
     lastUpdated: doc.lastUpdated
       ? doc.lastUpdated.toISOString()
       : new Date().toISOString(),

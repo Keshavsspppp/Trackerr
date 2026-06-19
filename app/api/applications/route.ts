@@ -11,19 +11,28 @@ import { logError } from '@/src/lib/logger';
 export const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
 
 const RATE_LIMIT_WINDOW_MS = 60 * 1000; // 1 minute
-const RATE_LIMIT_MAX_REQUESTS = 10; // 10 applications per minute
+const RATE_LIMIT_MAX_REQUESTS = 10;     // 10 manual/extension creates per minute
+const RATE_LIMIT_CSV_MAX = 100;         // 100 csv_import creates per minute
 
-function checkRateLimit(userId: string): { allowed: boolean; retryAfter?: number } {
+function checkRateLimit(
+  userId: string,
+  isCsvImport: boolean
+): { allowed: boolean; retryAfter?: number } {
+  // CSV bulk imports are already authenticated — apply a generous separate cap
+  // so that importing up to 100 rows in one go never triggers a 429.
+  const limit = isCsvImport ? RATE_LIMIT_CSV_MAX : RATE_LIMIT_MAX_REQUESTS;
+  const key = isCsvImport ? `${userId}:csv` : userId;
+
   const now = Date.now();
-  const userLimit = rateLimitMap.get(userId);
+  const userLimit = rateLimitMap.get(key);
 
   if (!userLimit || now > userLimit.resetAt) {
     // First request or window expired — reset
-    rateLimitMap.set(userId, { count: 1, resetAt: now + RATE_LIMIT_WINDOW_MS });
+    rateLimitMap.set(key, { count: 1, resetAt: now + RATE_LIMIT_WINDOW_MS });
     return { allowed: true };
   }
 
-  if (userLimit.count >= RATE_LIMIT_MAX_REQUESTS) {
+  if (userLimit.count >= limit) {
     // Rate limit exceeded
     const retryAfter = Math.ceil((userLimit.resetAt - now) / 1000);
     return { allowed: false, retryAfter };
@@ -47,8 +56,14 @@ export async function POST(req: NextRequest) {
     const userId = token.sub;
     const userEmail = token.email as string | undefined;
 
-    // Rate limit check
-    const rateLimitResult = checkRateLimit(userId);
+    const body = await req.json();
+    const { company, role, status, appliedDate, jobUrl, notes, source, capturedAt, originalUrl } = body;
+
+    // CSV bulk imports get a higher rate-limit cap (100/min) so that importing
+    // a full spreadsheet never returns 429. Manual/extension adds keep the
+    // stricter 10/min cap to prevent abuse.
+    const isCsvImport = source === 'csv_import';
+    const rateLimitResult = checkRateLimit(userId, isCsvImport);
     if (!rateLimitResult.allowed) {
       return NextResponse.json(
         { error: 'Too many requests. Please try again later.' },
@@ -69,8 +84,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const body = await req.json();
-    const { company, role, status, appliedDate, jobUrl, notes, source, capturedAt, originalUrl } = body;
+    // body already parsed above (before rate-limit check)
 
     // Validate required fields — must be non-empty and non-whitespace
     if (!company || typeof company !== 'string' || !company.trim()) {

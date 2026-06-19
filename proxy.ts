@@ -20,7 +20,14 @@ export async function proxy(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/dashboard/:path*', '/api/applications/:path*'],
+  // Bug #3 fix: explicitly include exact root paths alongside wildcard sub-paths
+  // so /dashboard and /api/applications (with no trailing slash) are also matched.
+  matcher: [
+    '/dashboard',
+    '/dashboard/:path*',
+    '/api/applications',
+    '/api/applications/:path*',
+  ],
 };
 
 // Alias used by proxy.test.ts

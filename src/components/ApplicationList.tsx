@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import SourceBadge from "./SourceBadge";
+import { formatStaticDate } from "@/src/lib/applicationUtils";
 
 export interface IApplication {
   _id: string;
@@ -12,6 +13,7 @@ export interface IApplication {
   appliedDate?: string;
   jobUrl?: string;
   notes?: string;
+  source?: "manual" | "extension" | "csv_import";
   lastUpdated: string;
   createdAt: string;
 }
@@ -84,6 +86,11 @@ export default function ApplicationList({
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   async function handleStatusChange(
     id: string,
@@ -112,7 +119,7 @@ export default function ApplicationList({
 
   async function handleDelete(id: string, company: string, role: string) {
     const confirmed = window.confirm(
-      `Delete the application for "${role}" at "${company}"? This cannot be undone.`
+      `Delete the internship for "${role}" at "${company}"? This cannot be undone.`
     );
     if (!confirmed) return;
 
@@ -161,10 +168,10 @@ export default function ApplicationList({
             color: "#111827",
           }}
         >
-          No applications yet
+          No internships yet
         </p>
         <p style={{ margin: 0, fontSize: "14px", color: "#6B7280" }}>
-          Add your first one to get started.
+          Add your first internship to get started.
         </p>
       </div>
     );
@@ -225,7 +232,7 @@ export default function ApplicationList({
                 Applied Date
               </th>
               <th scope="col" style={thStyle}>
-                Job URL
+                Posting URL
               </th>
               <th scope="col" style={{ ...thStyle, maxWidth: "180px" }}>
                 Notes
@@ -237,7 +244,7 @@ export default function ApplicationList({
           </thead>
           <tbody>
             {applications.map((app) => {
-              const stale = isStale(app);
+              const stale = isMounted && isStale(app);
               const cfg = STATUS_CONFIG[app.status];
 
               return (
@@ -329,9 +336,11 @@ export default function ApplicationList({
                     {app.appliedDate ? (
                       <span
                         title={
-                          stale
-                            ? `⚠ No update in 7+ days (${new Date(app.appliedDate).toLocaleDateString()})`
-                            : new Date(app.appliedDate).toLocaleDateString()
+                          isMounted
+                            ? stale
+                              ? `⚠ No update in 7+ days (${new Date(app.appliedDate).toLocaleDateString()})`
+                              : new Date(app.appliedDate).toLocaleDateString()
+                            : formatStaticDate(app.appliedDate)
                         }
                         style={{
                           color: stale ? "#B45309" : "#6B7280",
@@ -347,7 +356,7 @@ export default function ApplicationList({
                             ⚠
                           </span>
                         )}
-                        {relativeTime(app.appliedDate)}
+                        {isMounted ? relativeTime(app.appliedDate) : formatStaticDate(app.appliedDate)}
                       </span>
                     ) : (
                       <span style={{ color: "#9CA3AF" }}>—</span>
@@ -393,7 +402,7 @@ export default function ApplicationList({
                   {/* Actions */}
                   <td style={{ ...tdStyle, textAlign: "right" }}>
                     <button
-                      aria-label={`Delete application for ${app.role} at ${app.company}`}
+                      aria-label={`Delete internship for ${app.role} at ${app.company}`}
                       disabled={deletingId === app._id}
                       onClick={() =>
                         handleDelete(app._id, app.company, app.role)

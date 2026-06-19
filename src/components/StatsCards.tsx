@@ -91,7 +91,7 @@ export default function StatsCards({ stats }: StatsCardsProps) {
     {
       label: 'Total',
       value: stats.total,
-      description: 'All applications',
+      description: 'All internships',
       accentColor: '#6366F1',
     },
     {
@@ -134,7 +134,7 @@ export default function StatsCards({ stats }: StatsCardsProps) {
         gap: '16px',
       }}
       role="region"
-      aria-label="Application statistics"
+      aria-label="Internship statistics"
     >
       {cards.map((card) => (
         <StatCard key={card.label} card={card} />

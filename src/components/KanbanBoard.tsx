@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import type { IApplication } from './ApplicationList';
 import SourceBadge from './SourceBadge';
+import { formatStaticDate } from '@/src/lib/applicationUtils';
 
 interface KanbanBoardProps {
   applications: IApplication[];
@@ -37,6 +38,11 @@ export default function KanbanBoard({ applications, onRefresh }: KanbanBoardProp
   const [draggedId, setDraggedId] = useState<string | null>(null);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   // Group applications by status
   const applicationsByStatus = STATUS_COLUMNS.reduce((acc, status) => {
@@ -181,7 +187,7 @@ export default function KanbanBoard({ applications, onRefresh }: KanbanBoardProp
 
               {/* Cards */}
               {apps.map(app => {
-                const stale = isStale(app);
+                const stale = isMounted && isStale(app);
                 const isDragging = draggedId === app._id;
                 const isUpdating = updatingId === app._id;
 
@@ -191,7 +197,7 @@ export default function KanbanBoard({ applications, onRefresh }: KanbanBoardProp
                     draggable={!isUpdating}
                     onDragStart={(e) => handleDragStart(e, app._id)}
                     onDragEnd={handleDragEnd}
-                    title={stale ? `No update in ${Math.floor((Date.now() - new Date(app.lastUpdated).getTime()) / 86400000)} days` : undefined}
+                    title={isMounted && stale ? `No update in ${Math.floor((Date.now() - new Date(app.lastUpdated).getTime()) / 86400000)} days` : undefined}
                     style={{
                       backgroundColor: '#FFFFFF',
                       borderRadius: '8px',
@@ -251,7 +257,7 @@ export default function KanbanBoard({ applications, onRefresh }: KanbanBoardProp
                         }}
                       >
                         {stale && '⚠ '}
-                        {relativeTime(app.appliedDate)}
+                        {isMounted ? relativeTime(app.appliedDate) : formatStaticDate(app.appliedDate)}
                       </p>
                     )}
 

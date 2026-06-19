@@ -149,7 +149,7 @@ export default function ApplicationForm({
       }
 
       setFields(initialFields);
-      showToast?.('Application added ✓', 'success');
+      showToast?.('Internship added ✓', 'success');
       onCreated?.();
     } catch {
       const message = 'Network error. Please try again.';
@@ -218,7 +218,7 @@ export default function ApplicationForm({
           aria-required="true"
           aria-describedby={errors.role ? 'role-error' : undefined}
           aria-invalid={!!errors.role}
-          placeholder="e.g. Software Engineer"
+          placeholder="e.g. Software Engineering Intern"
           style={inputStyle(!!errors.role)}
         />
         {errors.role && (
@@ -274,7 +274,7 @@ export default function ApplicationForm({
       {/* Job URL */}
       <div>
         <label htmlFor="jobUrl" style={labelStyle}>
-          Job URL <span style={{ fontWeight: 400, color: '#9CA3AF' }}>(optional)</span>
+          Posting URL <span style={{ fontWeight: 400, color: '#9CA3AF' }}>(optional)</span>
         </label>
         <input
           id="jobUrl"
@@ -302,7 +302,7 @@ export default function ApplicationForm({
           onFocus={handleFocus}
           onBlur={handleBlur}
           rows={3}
-          placeholder="Recruiter contact, interview notes…"
+          placeholder="Recruiter contact, stipend, interview notes…"
           style={{ ...inputStyle(false), resize: 'vertical', lineHeight: 1.5 }}
         />
       </div>

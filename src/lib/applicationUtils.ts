@@ -28,3 +28,23 @@ export function getDaysSinceUpdate(lastUpdated: string | Date): number {
   const now = Date.now();
   return Math.floor((now - lastUpdateTime) / (1000 * 60 * 60 * 24));
 }
+
+/**
+ * Safely format date into a timezone-agnostic string (MM/DD/YYYY) for initial rendering.
+ * Uses string splitting to avoid Date object timezone adjustments.
+ * 
+ * @param dateStr ISO date string (e.g. from mongoose document)
+ * @returns Formatted date string or empty string
+ */
+export function formatStaticDate(dateStr: string | undefined): string {
+  if (!dateStr) return "";
+  const datePart = dateStr.split("T")[0];
+  const parts = datePart.split("-");
+  if (parts.length === 3) {
+    const year = parts[0];
+    const month = parseInt(parts[1], 10).toString();
+    const day = parseInt(parts[2], 10).toString();
+    return `${month}/${day}/${year}`;
+  }
+  return datePart;
+}
