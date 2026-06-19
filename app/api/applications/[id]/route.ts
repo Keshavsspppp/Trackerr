@@ -49,11 +49,13 @@ export async function PATCH(
       return NextResponse.json({ error: errorMessage }, { status: 400 });
     }
 
-    const { status, notes, jobUrl, appliedDate, source, capturedAt, originalUrl } = result.data;
+    const { company, role, status, notes, jobUrl, appliedDate, source, capturedAt, originalUrl } = result.data;
 
     await connectDB();
 
     const updateFields: Record<string, unknown> = {};
+    if (company !== undefined) updateFields.company = company.trim();
+    if (role !== undefined) updateFields.role = role.trim();
     if (status !== undefined) {
       updateFields.status = status;
       // Only reset the staleness clock when the user actually changes status

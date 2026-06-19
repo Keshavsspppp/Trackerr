@@ -17,15 +17,50 @@ export default function SlideOver({
 }: SlideOverProps) {
   const panelRef = useRef<HTMLDivElement>(null);
 
-  // Close on Escape
+  const lastActiveElementRef = useRef<HTMLElement | null>(null);
+
+  // Close on Escape & Tab Focus Trap & Restore Focus
   useEffect(() => {
     if (!isOpen) return;
 
+    lastActiveElementRef.current = document.activeElement as HTMLElement;
+
     function handleKeyDown(e: KeyboardEvent) {
       if (e.key === 'Escape') onClose();
+
+      if (e.key === 'Tab') {
+        const panel = panelRef.current;
+        if (!panel) return;
+
+        const focusable = panel.querySelectorAll<HTMLElement>(
+          'input, select, textarea, button, a[href], [tabindex]:not([tabindex="-1"])'
+        );
+        if (focusable.length === 0) return;
+
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+
+        if (e.shiftKey) {
+          if (document.activeElement === first) {
+            last.focus();
+            e.preventDefault();
+          }
+        } else {
+          if (document.activeElement === last) {
+            first.focus();
+            e.preventDefault();
+          }
+        }
+      }
     }
+
     document.addEventListener('keydown', handleKeyDown);
-    return () => document.removeEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+      if (lastActiveElementRef.current) {
+        lastActiveElementRef.current.focus();
+      }
+    };
   }, [isOpen, onClose]);
 
   // Autofocus first focusable element when opened
@@ -34,7 +69,6 @@ export default function SlideOver({
     const panel = panelRef.current;
     if (!panel) return;
 
-    // Small delay to let animation start
     const raf = requestAnimationFrame(() => {
       const focusable = panel.querySelector<HTMLElement>(
         'input, select, textarea, button, [tabindex]:not([tabindex="-1"])'

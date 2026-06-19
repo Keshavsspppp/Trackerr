@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from 'react';
+import { Edit3, AlertTriangle } from 'lucide-react';
 import type { IApplication } from './ApplicationList';
 import SourceBadge from './SourceBadge';
 import { formatStaticDate } from '@/src/lib/applicationUtils';
@@ -8,6 +9,7 @@ import { formatStaticDate } from '@/src/lib/applicationUtils';
 interface KanbanBoardProps {
   applications: IApplication[];
   onRefresh?: () => void;
+  onEdit?: (application: IApplication) => void;
 }
 
 type Status = 'Applied' | 'Interview' | 'Offer' | 'Rejected';
@@ -15,26 +17,35 @@ type Status = 'Applied' | 'Interview' | 'Offer' | 'Rejected';
 const STATUS_COLUMNS: Status[] = ['Applied', 'Interview', 'Offer', 'Rejected'];
 
 const STATUS_CONFIG: Record<Status, { bg: string; text: string; border: string }> = {
-  Applied: { bg: '#EFF6FF', text: '#1D4ED8', border: '#3B82F6' },
-  Interview: { bg: '#FFFBEB', text: '#B45309', border: '#F59E0B' },
-  Offer: { bg: '#D1FAE5', text: '#065F46', border: '#10B981' },
-  Rejected: { bg: '#FEE2E2', text: '#991B1B', border: '#EF4444' },
+  Applied: { bg: 'var(--color-applied-bg)', text: 'var(--color-applied-text)', border: 'var(--color-applied-dot)' },
+  Interview: { bg: 'var(--color-interview-bg)', text: 'var(--color-interview-text)', border: 'var(--color-interview-dot)' },
+  Offer: { bg: 'var(--color-offer-bg)', text: 'var(--color-offer-text)', border: 'var(--color-offer-dot)' },
+  Rejected: { bg: 'var(--color-rejected-bg)', text: 'var(--color-rejected-text)', border: 'var(--color-rejected-dot)' },
 };
 
 function relativeTime(dateStr: string): string {
-  const diff = Date.now() - new Date(dateStr).getTime();
-  const days = Math.floor(diff / 86400000);
-  if (days === 0) return 'Today';
-  if (days === 1) return 'Yesterday';
-  return `${days} days ago`;
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const targetDate = new Date(dateStr);
+  const target = new Date(targetDate.getFullYear(), targetDate.getMonth(), targetDate.getDate());
+  
+  const diffTime = today.getTime() - target.getTime();
+  const diffDays = Math.round(diffTime / 86400000);
+  
+  if (diffDays === 0) return 'Today';
+  if (diffDays === 1) return 'Yesterday';
+  if (diffDays === -1) return 'Tomorrow';
+  if (diffDays < -1) return `In ${Math.abs(diffDays)} days`;
+  return `${diffDays} days ago`;
 }
 
 function isStale(app: IApplication): boolean {
+  if (app.status !== 'Applied') return false;
   const diff = Date.now() - new Date(app.lastUpdated).getTime();
   return diff > 7 * 86400000;
 }
 
-export default function KanbanBoard({ applications, onRefresh }: KanbanBoardProps) {
+export default function KanbanBoard({ applications, onRefresh, onEdit }: KanbanBoardProps) {
   const [draggedId, setDraggedId] = useState<string | null>(null);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -109,10 +120,10 @@ export default function KanbanBoard({ applications, onRefresh }: KanbanBoardProp
           style={{
             marginBottom: '16px',
             padding: '10px 14px',
-            backgroundColor: '#FEE2E2',
-            color: '#991B1B',
+            backgroundColor: 'var(--color-rejected-bg)',
+            color: 'var(--color-rejected-text)',
             borderRadius: '8px',
-            border: '1px solid #FECACA',
+            border: '1px solid var(--color-rejected-dot)',
             fontSize: '13px',
           }}
         >
@@ -120,13 +131,7 @@ export default function KanbanBoard({ applications, onRefresh }: KanbanBoardProp
         </div>
       )}
 
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(4, 1fr)',
-          gap: '16px',
-        }}
-      >
+      <div className="kanban-grid">
         {STATUS_COLUMNS.map(status => {
           const config = STATUS_CONFIG[status];
           const apps = applicationsByStatus[status];
@@ -197,26 +202,16 @@ export default function KanbanBoard({ applications, onRefresh }: KanbanBoardProp
                     draggable={!isUpdating}
                     onDragStart={(e) => handleDragStart(e, app._id)}
                     onDragEnd={handleDragEnd}
-                    title={isMounted && stale ? `No update in ${Math.floor((Date.now() - new Date(app.lastUpdated).getTime()) / 86400000)} days` : undefined}
+                    className="hover-translate"
+                    title={isMounted && stale ? `No update in 7+ days` : undefined}
                     style={{
-                      backgroundColor: '#FFFFFF',
+                      backgroundColor: 'var(--color-surface)',
                       borderRadius: '8px',
                       padding: '12px',
-                      border: stale ? '2px solid #F59E0B' : '1px solid #E5E7EB',
+                      border: stale ? '2px solid var(--color-stale-border)' : '1px solid var(--color-border)',
                       cursor: isUpdating ? 'not-allowed' : 'grab',
                       opacity: isDragging ? 0.5 : (isUpdating ? 0.7 : 1),
-                      boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
-                      transition: 'all 150ms ease',
-                    }}
-                    onMouseEnter={(e) => {
-                      if (!isDragging && !isUpdating) {
-                        (e.currentTarget as HTMLDivElement).style.boxShadow = '0 4px 12px rgba(0,0,0,0.12)';
-                        (e.currentTarget as HTMLDivElement).style.transform = 'translateY(-2px)';
-                      }
-                    }}
-                    onMouseLeave={(e) => {
-                      (e.currentTarget as HTMLDivElement).style.boxShadow = '0 1px 3px rgba(0,0,0,0.08)';
-                      (e.currentTarget as HTMLDivElement).style.transform = 'translateY(0)';
+                      boxShadow: 'var(--shadow-card)',
                     }}
                   >
                     {/* Company Name */}
@@ -225,7 +220,7 @@ export default function KanbanBoard({ applications, onRefresh }: KanbanBoardProp
                         style={{
                           fontSize: '14px',
                           fontWeight: 600,
-                          color: '#111827',
+                          color: 'var(--color-text-primary)',
                           margin: 0,
                         }}
                       >
@@ -240,7 +235,7 @@ export default function KanbanBoard({ applications, onRefresh }: KanbanBoardProp
                     <p
                       style={{
                         fontSize: '13px',
-                        color: '#6B7280',
+                        color: 'var(--color-text-secondary)',
                         margin: '0 0 8px 0',
                       }}
                     >
@@ -252,11 +247,14 @@ export default function KanbanBoard({ applications, onRefresh }: KanbanBoardProp
                       <p
                         style={{
                           fontSize: '12px',
-                          color: stale ? '#B45309' : '#9CA3AF',
+                          color: stale ? 'var(--color-stale-text)' : 'var(--color-text-secondary)',
                           margin: 0,
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '4px',
                         }}
                       >
-                        {stale && '⚠ '}
+                        {stale && <AlertTriangle size={12} style={{ color: 'var(--color-stale-border)' }} />}
                         {isMounted ? relativeTime(app.appliedDate) : formatStaticDate(app.appliedDate)}
                       </p>
                     )}
@@ -266,7 +264,7 @@ export default function KanbanBoard({ applications, onRefresh }: KanbanBoardProp
                       <p
                         style={{
                           fontSize: '12px',
-                          color: '#6B7280',
+                          color: 'var(--color-text-secondary)',
                           margin: '8px 0 0 0',
                           overflow: 'hidden',
                           textOverflow: 'ellipsis',
@@ -277,12 +275,79 @@ export default function KanbanBoard({ applications, onRefresh }: KanbanBoardProp
                       </p>
                     )}
 
+                    {/* Mobile Only Status Select */}
+                    <div
+                      className="mobile-only-status-select"
+                      style={{
+                        marginTop: "8px",
+                      }}
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <label htmlFor={`mobile-status-select-${app._id}`} style={{ display: "none" }}>
+                        Move status
+                      </label>
+                      <select
+                        id={`mobile-status-select-${app._id}`}
+                        value={app.status}
+                        disabled={isUpdating}
+                        onChange={(e) => handleStatusChange(app._id, e.target.value as Status)}
+                        style={{
+                          width: "100%",
+                          padding: "6px 8px",
+                          fontSize: "12px",
+                          borderRadius: "4px",
+                          border: "1px solid var(--color-border)",
+                          background: "var(--color-surface)",
+                          color: "var(--color-text-secondary)",
+                          cursor: "pointer",
+                        }}
+                      >
+                        {STATUS_COLUMNS.map((s) => (
+                          <option key={s} value={s}>
+                            Move to {s}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {/* Edit button */}
+                    <div
+                      style={{
+                        display: "flex",
+                        justifyContent: "flex-end",
+                        gap: "6px",
+                        marginTop: "10px",
+                      }}
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <button
+                        onClick={() => onEdit?.(app)}
+                        className="hover-btn-neutral"
+                        style={{
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: "4px",
+                          padding: "4px 8px",
+                          border: "1px solid var(--color-border)",
+                          borderRadius: "4px",
+                          background: "var(--color-surface)",
+                          color: "var(--color-text-secondary)",
+                          fontSize: "11px",
+                          fontWeight: 500,
+                          cursor: "pointer",
+                        }}
+                        aria-label={`Edit ${app.role} at ${app.company}`}
+                      >
+                        <Edit3 size={11} /> Edit
+                      </button>
+                    </div>
+
                     {isUpdating && (
                       <div
                         style={{
                           marginTop: '8px',
                           fontSize: '11px',
-                          color: '#6B7280',
+                          color: 'var(--color-text-secondary)',
                           fontStyle: 'italic',
                         }}
                       >
@@ -298,7 +363,7 @@ export default function KanbanBoard({ applications, onRefresh }: KanbanBoardProp
                   style={{
                     padding: '32px 16px',
                     textAlign: 'center',
-                    color: '#9CA3AF',
+                    color: 'var(--color-text-muted)',
                     fontSize: '13px',
                   }}
                 >

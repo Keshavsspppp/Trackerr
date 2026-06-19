@@ -421,3 +421,69 @@ body {
 @keyframes scaleUp {
   to { transform: scale(1); }
 }
+
+/* ── Kanban Grid Responsive ─────────────────────────────────────────────── */
+.kanban-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+}
+@media (min-width: 768px) and (max-width: 1023px) {
+  .kanban-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+@media (min-width: 1024px) {
+  .kanban-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+/* ── CSS Hover Utility Classes ───────────────────────────────────────────── */
+.hover-translate {
+  transition: transform 150ms ease, box-shadow 150ms ease;
+}
+.hover-translate:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-card-hover) !important;
+}
+
+.hover-bg-gray {
+  transition: background-color 100ms ease;
+}
+.hover-bg-gray:hover {
+  background-color: #F9FAFB !important;
+}
+
+.hover-btn-accent {
+  transition: background-color 150ms ease;
+}
+.hover-btn-accent:hover:not(:disabled) {
+  background-color: var(--color-accent-hover) !important;
+}
+
+.hover-btn-danger {
+  transition: background-color 150ms ease;
+}
+.hover-btn-danger:hover:not(:disabled) {
+  background-color: #B91C1C !important;
+}
+
+.hover-btn-neutral {
+  transition: background-color 150ms ease, border-color 150ms ease;
+}
+.hover-btn-neutral:hover:not(:disabled) {
+  background-color: #F9FAFB !important;
+  border-color: #C5C6C9 !important;
+}
+
+@media (max-width: 1023px) {
+  .mobile-only-status-select {
+    display: block !important;
+  }
+}
+@media (min-width: 1024px) {
+  .mobile-only-status-select {
+    display: none !important;
+  }
+}

@@ -36,10 +36,10 @@ interface StatusConfig {
 }
 
 const STATUS_CONFIG: Record<ApplicationStatus, StatusConfig> = {
-  Applied:   { bg: "#DBEAFE", text: "#1D4ED8", dot: "#3B82F6",  activeBg: "#3B82F6"  },
-  Interview: { bg: "#FEF3C7", text: "#B45309", dot: "#F59E0B",  activeBg: "#F59E0B"  },
-  Offer:     { bg: "#D1FAE5", text: "#065F46", dot: "#10B981",  activeBg: "#10B981"  },
-  Rejected:  { bg: "#FEE2E2", text: "#991B1B", dot: "#EF4444",  activeBg: "#EF4444"  },
+  Applied:   { bg: "var(--color-applied-bg)", text: "var(--color-applied-text)", dot: "var(--color-applied-dot)",  activeBg: "var(--color-applied-dot)"  },
+  Interview: { bg: "var(--color-interview-bg)", text: "var(--color-interview-text)", dot: "var(--color-interview-dot)",  activeBg: "var(--color-interview-dot)"  },
+  Offer:     { bg: "var(--color-offer-bg)", text: "var(--color-offer-text)", dot: "var(--color-offer-dot)",  activeBg: "var(--color-offer-dot)"  },
+  Rejected:  { bg: "var(--color-rejected-bg)", text: "var(--color-rejected-text)", dot: "var(--color-rejected-dot)",  activeBg: "var(--color-rejected-dot)"  },
 };
 
 export default function StatusFilter({
@@ -81,11 +81,12 @@ export default function StatusFilter({
       <button
         onClick={() => onFilter(undefined)}
         aria-pressed={isAllSelected}
+        className={isAllSelected ? "hover-btn-accent" : "hover-btn-neutral"}
         style={{
           ...pillBase,
-          background: isAllSelected ? "#6366F1" : "#FFFFFF",
-          borderColor: isAllSelected ? "#6366F1" : "#E5E7EB",
-          color: isAllSelected ? "#FFFFFF" : "#374151",
+          background: isAllSelected ? "var(--color-accent)" : "var(--color-surface)",
+          borderColor: isAllSelected ? "var(--color-accent)" : "var(--color-border)",
+          color: isAllSelected ? "#FFFFFF" : "var(--color-text-primary)",
           fontWeight: isAllSelected ? 600 : 500,
         }}
       >
@@ -94,7 +95,7 @@ export default function StatusFilter({
             width: "6px",
             height: "6px",
             borderRadius: "50%",
-            background: isAllSelected ? "#FFFFFF" : "#9CA3AF",
+            background: isAllSelected ? "#FFFFFF" : "var(--color-text-muted)",
             flexShrink: 0,
           }}
         />
@@ -107,8 +108,8 @@ export default function StatusFilter({
             minWidth: "20px",
             height: "20px",
             borderRadius: "999px",
-            background: isAllSelected ? "rgba(255,255,255,0.25)" : "#F3F4F6",
-            color: isAllSelected ? "#FFFFFF" : "#6B7280",
+            background: isAllSelected ? "rgba(255,255,255,0.25)" : "var(--color-bg)",
+            color: isAllSelected ? "#FFFFFF" : "var(--color-text-secondary)",
             fontSize: "11px",
             fontWeight: 600,
             padding: "0 5px",
@@ -129,11 +130,12 @@ export default function StatusFilter({
             key={status}
             onClick={() => onFilter(status)}
             aria-pressed={isSelected}
+            className={isSelected ? "hover-btn-accent" : "hover-btn-neutral"}
             style={{
               ...pillBase,
-              background: isSelected ? cfg.activeBg : "#FFFFFF",
-              borderColor: isSelected ? cfg.activeBg : "#E5E7EB",
-              color: isSelected ? "#FFFFFF" : "#374151",
+              background: isSelected ? cfg.activeBg : "var(--color-surface)",
+              borderColor: isSelected ? cfg.activeBg : "var(--color-border)",
+              color: isSelected ? "#FFFFFF" : "var(--color-text-primary)",
               fontWeight: isSelected ? 600 : 500,
             }}
           >
@@ -155,8 +157,8 @@ export default function StatusFilter({
                 minWidth: "20px",
                 height: "20px",
                 borderRadius: "999px",
-                background: isSelected ? "rgba(255,255,255,0.25)" : "#F3F4F6",
-                color: isSelected ? "#FFFFFF" : "#6B7280",
+                background: isSelected ? "rgba(255,255,255,0.25)" : "var(--color-bg)",
+                color: isSelected ? "#FFFFFF" : "var(--color-text-secondary)",
                 fontSize: "11px",
                 fontWeight: 600,
                 padding: "0 5px",

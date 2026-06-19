@@ -1,9 +1,12 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import type { IApplication } from './ApplicationList';
 
 interface ApplicationFormProps {
+  application?: IApplication;
   onCreated?: () => void;
+  onUpdated?: () => void;
   onCancel?: () => void;
   showToast?: (message: string, type: 'success' | 'error') => void;
 }
@@ -39,10 +42,10 @@ const inputStyle = (hasError: boolean): React.CSSProperties => ({
   width: '100%',
   fontSize: '14px',
   padding: '10px 12px',
-  border: `1px solid ${hasError ? '#EF4444' : '#E5E7EB'}`,
-  borderRadius: '8px',
-  background: '#FFFFFF',
-  color: '#111827',
+  border: `1px solid ${hasError ? 'var(--color-rejected-dot)' : 'var(--color-border)'}`,
+  borderRadius: 'var(--radius-input)',
+  background: 'var(--color-surface)',
+  color: 'var(--color-text-primary)',
   outline: 'none',
   transition: 'border-color 150ms ease, box-shadow 150ms ease',
 });
@@ -51,18 +54,36 @@ const labelStyle: React.CSSProperties = {
   display: 'block',
   fontSize: '13px',
   fontWeight: 600,
-  color: '#374151',
+  color: 'var(--color-text-secondary)',
   marginBottom: '4px',
 };
 
 export default function ApplicationForm({
+  application,
   onCreated,
+  onUpdated,
   onCancel,
   showToast,
 }: ApplicationFormProps) {
   const [fields, setFields] = useState<FormFields>(initialFields);
   const [errors, setErrors] = useState<FormErrors>({});
   const [submitting, setSubmitting] = useState(false);
+
+  // Sync with application prop when it changes (for edit mode)
+  useEffect(() => {
+    if (application) {
+      setFields({
+        company: application.company,
+        role: application.role,
+        status: application.status,
+        appliedDate: application.appliedDate ? new Date(application.appliedDate).toISOString().substring(0, 10) : '',
+        jobUrl: application.jobUrl ?? '',
+        notes: application.notes ?? '',
+      });
+    } else {
+      setFields(initialFields);
+    }
+  }, [application]);
 
   const isDisabled =
     submitting ||
@@ -75,7 +96,7 @@ export default function ApplicationForm({
     >
   ) {
     const { name, value } = e.target;
-    setFields((prev) => ({ ...prev, [name]: value }));
+    setFields((prev) => ({ ...prev, [name]: value as never }));
     if (name === 'company' || name === 'role') {
       setErrors((prev) => ({ ...prev, [name]: undefined }));
     }
@@ -86,7 +107,7 @@ export default function ApplicationForm({
       HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
     >
   ) {
-    e.currentTarget.style.borderColor = '#3B82F6';
+    e.currentTarget.style.borderColor = 'var(--color-accent)';
     e.currentTarget.style.boxShadow = '0 0 0 3px rgba(59,130,246,0.15)';
   }
 
@@ -99,7 +120,7 @@ export default function ApplicationForm({
     const hasError =
       (name === 'company' && !!errors.company) ||
       (name === 'role' && !!errors.role);
-    e.currentTarget.style.borderColor = hasError ? '#EF4444' : '#E5E7EB';
+    e.currentTarget.style.borderColor = hasError ? 'var(--color-rejected-dot)' : 'var(--color-border)';
     e.currentTarget.style.boxShadow = 'none';
   }
 
@@ -127,13 +148,16 @@ export default function ApplicationForm({
         company: fields.company.trim(),
         role: fields.role.trim(),
         status: fields.status,
+        appliedDate: fields.appliedDate,
+        jobUrl: fields.jobUrl.trim(),
+        notes: fields.notes.trim(),
       };
-      if (fields.appliedDate) body.appliedDate = fields.appliedDate;
-      if (fields.jobUrl.trim()) body.jobUrl = fields.jobUrl.trim();
-      if (fields.notes.trim()) body.notes = fields.notes.trim();
 
-      const res = await fetch('/api/applications', {
-        method: 'POST',
+      const url = application ? `/api/applications/${application._id}` : '/api/applications';
+      const method = application ? 'PATCH' : 'POST';
+
+      const res = await fetch(url, {
+        method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
       });
@@ -148,9 +172,14 @@ export default function ApplicationForm({
         return;
       }
 
-      setFields(initialFields);
-      showToast?.('Internship added ✓', 'success');
-      onCreated?.();
+      if (application) {
+        showToast?.('Internship updated ✓', 'success');
+        (onUpdated || onCreated)?.();
+      } else {
+        setFields(initialFields);
+        showToast?.('Internship added ✓', 'success');
+        onCreated?.();
+      }
     } catch {
       const message = 'Network error. Please try again.';
       setErrors({ submit: message });
@@ -331,23 +360,17 @@ export default function ApplicationForm({
           <button
             type="button"
             onClick={onCancel}
+            className="hover-btn-neutral"
             style={{
               flex: 1,
               height: '44px',
               fontSize: '14px',
               fontWeight: 500,
               cursor: 'pointer',
-              borderRadius: '8px',
-              border: '1px solid #E5E7EB',
-              background: 'transparent',
-              color: '#374151',
-              transition: 'background 150ms ease',
-            }}
-            onMouseEnter={(e) => {
-              (e.currentTarget as HTMLButtonElement).style.background = '#F9FAFB';
-            }}
-            onMouseLeave={(e) => {
-              (e.currentTarget as HTMLButtonElement).style.background = 'transparent';
+              borderRadius: 'var(--radius-btn)',
+              border: '1px solid var(--color-border)',
+              background: 'var(--color-surface)',
+              color: 'var(--color-text-secondary)',
             }}
           >
             Cancel
@@ -356,26 +379,18 @@ export default function ApplicationForm({
         <button
           type="submit"
           disabled={isDisabled}
+          className="hover-btn-accent"
           style={{
             flex: 1,
             height: '44px',
             fontSize: '14px',
             fontWeight: 600,
             cursor: isDisabled ? 'not-allowed' : 'pointer',
-            borderRadius: '8px',
+            borderRadius: 'var(--radius-btn)',
             border: 'none',
-            background: isDisabled ? '#93C5FD' : '#3B82F6',
+            background: isDisabled ? '#93C5FD' : 'var(--color-accent)',
             color: '#FFFFFF',
-            transition: 'background 150ms ease',
             opacity: isDisabled ? 0.7 : 1,
-          }}
-          onMouseEnter={(e) => {
-            if (!isDisabled)
-              (e.currentTarget as HTMLButtonElement).style.background = '#2563EB';
-          }}
-          onMouseLeave={(e) => {
-            if (!isDisabled)
-              (e.currentTarget as HTMLButtonElement).style.background = '#3B82F6';
           }}
         >
           {submitting ? 'Saving…' : 'Save →'}

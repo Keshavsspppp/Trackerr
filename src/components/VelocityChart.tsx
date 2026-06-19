@@ -96,10 +96,10 @@ export default function VelocityChart({ applications }: VelocityChartProps) {
   return (
     <div
       style={{
-        backgroundColor: '#FFFFFF',
+        backgroundColor: 'var(--color-surface)',
         borderRadius: '12px',
         padding: '24px',
-        border: '1px solid #E5E7EB',
+        border: '1px solid var(--color-border)',
       }}
     >
       {/* Header with Period Selector */}
@@ -117,7 +117,7 @@ export default function VelocityChart({ applications }: VelocityChartProps) {
           style={{
             fontSize: '18px',
             fontWeight: 700,
-            color: '#111827',
+            color: 'var(--color-text-primary)',
             margin: 0,
           }}
         >
@@ -129,29 +129,17 @@ export default function VelocityChart({ applications }: VelocityChartProps) {
             <button
               key={period.value}
               onClick={() => setSelectedPeriod(period.value)}
+              className={selectedPeriod === period.value ? 'hover-btn-accent' : 'hover-btn-neutral'}
               style={{
                 padding: '6px 12px',
                 fontSize: '13px',
                 fontWeight: 600,
-                border: 'none',
+                border: selectedPeriod === period.value ? 'none' : '1px solid var(--color-border)',
                 borderRadius: '6px',
                 cursor: 'pointer',
                 backgroundColor:
-                  selectedPeriod === period.value ? '#3B82F6' : '#F3F4F6',
-                color: selectedPeriod === period.value ? '#FFFFFF' : '#6B7280',
-                transition: 'all 150ms ease',
-              }}
-              onMouseEnter={(e) => {
-                if (selectedPeriod !== period.value) {
-                  (e.currentTarget as HTMLButtonElement).style.backgroundColor =
-                    '#E5E7EB';
-                }
-              }}
-              onMouseLeave={(e) => {
-                if (selectedPeriod !== period.value) {
-                  (e.currentTarget as HTMLButtonElement).style.backgroundColor =
-                    '#F3F4F6';
-                }
+                  selectedPeriod === period.value ? 'var(--color-accent)' : 'var(--color-surface)',
+                color: selectedPeriod === period.value ? '#FFFFFF' : 'var(--color-text-secondary)',
               }}
             >
               {period.label}
@@ -176,7 +164,7 @@ export default function VelocityChart({ applications }: VelocityChartProps) {
                 y1={(i * 300) / 4}
                 x2="800"
                 y2={(i * 300) / 4}
-                stroke="#E5E7EB"
+                stroke="var(--color-border)"
                 strokeWidth="1"
               />
             ))}
@@ -186,13 +174,13 @@ export default function VelocityChart({ applications }: VelocityChartProps) {
               <polyline
                 points={chartData
                   .map((d, i) => {
-                    const x = (i / (chartData.length - 1)) * 800;
+                    const x = 40 + (i / (chartData.length - 1)) * 720;
                     const y = 300 - (d.count / maxCount) * 250 - 25;
                     return `${x},${y}`;
                   })
                   .join(' ')}
                 fill="none"
-                stroke="#3B82F6"
+                stroke="var(--color-accent)"
                 strokeWidth="3"
                 strokeLinecap="round"
                 strokeLinejoin="round"
@@ -201,7 +189,9 @@ export default function VelocityChart({ applications }: VelocityChartProps) {
 
             {/* Data points */}
             {chartData.map((d, i) => {
-              const x = (i / Math.max(chartData.length - 1, 1)) * 800;
+              const x = chartData.length === 1 
+                ? 400 
+                : 40 + (i / (chartData.length - 1)) * 720;
               const y = 300 - (d.count / maxCount) * 250 - 25;
 
               return (
@@ -210,8 +200,8 @@ export default function VelocityChart({ applications }: VelocityChartProps) {
                   cx={x}
                   cy={y}
                   r="6"
-                  fill="#3B82F6"
-                  stroke="#FFFFFF"
+                  fill="var(--color-accent)"
+                  stroke="var(--color-surface)"
                   strokeWidth="2"
                   style={{ cursor: 'pointer' }}
                   onMouseEnter={() => setHoveredPoint(d)}
@@ -229,8 +219,8 @@ export default function VelocityChart({ applications }: VelocityChartProps) {
                 top: '10px',
                 left: '50%',
                 transform: 'translateX(-50%)',
-                backgroundColor: '#1F2937',
-                color: '#FFFFFF',
+                backgroundColor: 'var(--color-text-primary)',
+                color: 'var(--color-surface)',
                 padding: '8px 12px',
                 borderRadius: '6px',
                 fontSize: '13px',
@@ -251,7 +241,7 @@ export default function VelocityChart({ applications }: VelocityChartProps) {
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            color: '#9CA3AF',
+            color: 'var(--color-text-muted)',
             fontSize: '14px',
           }}
         >
@@ -267,7 +257,7 @@ export default function VelocityChart({ applications }: VelocityChartProps) {
             justifyContent: 'space-between',
             marginTop: '12px',
             fontSize: '12px',
-            color: '#6B7280',
+            color: 'var(--color-text-secondary)',
           }}
         >
           <span>{chartData[0].label}</span>

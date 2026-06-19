@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef } from 'react';
+import { Upload, Check, AlertTriangle } from 'lucide-react';
 import { importApplicationsFromCSV, type CSVImportResult } from '@/src/lib/csvImport';
 
 interface CSVImporterProps {
@@ -64,29 +65,24 @@ export default function CSVImporter({ userId, onImportComplete }: CSVImporterPro
       <button
         onClick={() => fileInputRef.current?.click()}
         disabled={importing}
+        className="hover-btn-neutral"
         style={{
           padding: '8px 16px',
-          backgroundColor: importing ? '#9CA3AF' : '#10B981',
-          color: '#FFFFFF',
-          border: 'none',
+          backgroundColor: 'var(--color-surface)',
+          color: 'var(--color-text-secondary)',
+          border: '1px solid var(--color-border)',
           borderRadius: '8px',
           fontSize: '14px',
           fontWeight: 600,
           cursor: importing ? 'not-allowed' : 'pointer',
-          transition: 'background 150ms ease',
-        }}
-        onMouseEnter={(e) => {
-          if (!importing) {
-            (e.currentTarget as HTMLButtonElement).style.backgroundColor = '#059669';
-          }
-        }}
-        onMouseLeave={(e) => {
-          if (!importing) {
-            (e.currentTarget as HTMLButtonElement).style.backgroundColor = '#10B981';
-          }
+          display: 'flex',
+          alignItems: 'center',
+          gap: '6px',
+          opacity: importing ? 0.6 : 1,
         }}
       >
-        {importing ? 'Importing...' : '📥 Import CSV'}
+        <Upload size={16} />
+        {importing ? 'Importing...' : 'Import CSV'}
       </button>
 
       {/* Result Modal */}
@@ -109,34 +105,37 @@ export default function CSVImporter({ userId, onImportComplete }: CSVImporterPro
           <div
             onClick={(e) => e.stopPropagation()}
             style={{
-              backgroundColor: '#FFFFFF',
+              backgroundColor: 'var(--color-surface)',
               borderRadius: '12px',
               padding: '24px',
               maxWidth: '500px',
               width: '90%',
               maxHeight: '80vh',
               overflow: 'auto',
-              boxShadow: '0 20px 60px rgba(0,0,0,0.3)',
+              boxShadow: 'var(--shadow-modal)',
+              border: '1px solid var(--color-border)',
             }}
           >
             <h2
               style={{
                 fontSize: '20px',
                 fontWeight: 700,
-                color: '#111827',
+                color: 'var(--color-text-primary)',
                 marginBottom: '16px',
               }}
             >
               Import Results
             </h2>
 
-            <div style={{ marginBottom: '20px' }}>
-              <p style={{ fontSize: '14px', color: '#374151', marginBottom: '8px' }}>
-                ✅ <strong>Successfully imported:</strong> {result.successCount} application{result.successCount !== 1 ? 's' : ''}
+            <div style={{ marginBottom: '20px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <p style={{ fontSize: '14px', color: 'var(--color-text-primary)', display: 'flex', alignItems: 'center' }}>
+                <Check size={16} style={{ color: 'var(--color-offer-dot)', marginRight: '6px' }} />
+                <strong>Successfully imported:</strong>&nbsp;{result.successCount} application{result.successCount !== 1 ? 's' : ''}
               </p>
               {result.skippedCount > 0 && (
-                <p style={{ fontSize: '14px', color: '#B45309', marginBottom: '8px' }}>
-                  ⚠️ <strong>Skipped:</strong> {result.skippedCount} row{result.skippedCount !== 1 ? 's' : ''} due to validation errors
+                <p style={{ fontSize: '14px', color: 'var(--color-stale-text)', display: 'flex', alignItems: 'center' }}>
+                  <AlertTriangle size={16} style={{ color: 'var(--color-stale-border)', marginRight: '6px' }} />
+                  <strong>Skipped:</strong>&nbsp;{result.skippedCount} row{result.skippedCount !== 1 ? 's' : ''} due to validation errors
                 </p>
               )}
             </div>
@@ -147,7 +146,7 @@ export default function CSVImporter({ userId, onImportComplete }: CSVImporterPro
                   style={{
                     fontSize: '16px',
                     fontWeight: 600,
-                    color: '#111827',
+                    color: 'var(--color-text-primary)',
                     marginBottom: '12px',
                   }}
                 >
@@ -157,7 +156,8 @@ export default function CSVImporter({ userId, onImportComplete }: CSVImporterPro
                   style={{
                     maxHeight: '200px',
                     overflow: 'auto',
-                    backgroundColor: '#FEF3C7',
+                    backgroundColor: 'var(--color-stale-bg)',
+                    border: '1px solid var(--color-stale-border)',
                     borderRadius: '8px',
                     padding: '12px',
                   }}
@@ -167,7 +167,7 @@ export default function CSVImporter({ userId, onImportComplete }: CSVImporterPro
                       key={index}
                       style={{
                         fontSize: '13px',
-                        color: '#92400E',
+                        color: 'var(--color-stale-text)',
                         marginBottom: '6px',
                       }}
                     >
@@ -180,23 +180,17 @@ export default function CSVImporter({ userId, onImportComplete }: CSVImporterPro
 
             <button
               onClick={handleCloseModal}
+              className="hover-btn-accent"
               style={{
                 width: '100%',
                 padding: '10px 16px',
-                backgroundColor: '#3B82F6',
+                backgroundColor: 'var(--color-accent)',
                 color: '#FFFFFF',
                 border: 'none',
                 borderRadius: '8px',
                 fontSize: '14px',
                 fontWeight: 600,
                 cursor: 'pointer',
-                transition: 'background 150ms ease',
-              }}
-              onMouseEnter={(e) => {
-                (e.currentTarget as HTMLButtonElement).style.backgroundColor = '#2563EB';
-              }}
-              onMouseLeave={(e) => {
-                (e.currentTarget as HTMLButtonElement).style.backgroundColor = '#3B82F6';
               }}
             >
               Close

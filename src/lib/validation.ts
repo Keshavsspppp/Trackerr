@@ -35,6 +35,8 @@ export const createApplicationSchema = z.object({
 });
 
 export const updateApplicationSchema = z.object({
+  company: z.string().trim().min(1, 'company and role are required').optional(),
+  role: z.string().trim().min(1, 'company and role are required').optional(),
   status: z.string().refine(isValidStatus, {
     message: 'Invalid status value. Must be one of: Applied, Interview, Offer, Rejected',
   }).optional(),

@@ -3,6 +3,15 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useSession, signOut } from "next-auth/react";
+import {
+  LayoutDashboard,
+  ClipboardList,
+  LogOut,
+  Menu,
+  Plus,
+  Download,
+  GraduationCap
+} from "lucide-react";
 import StatsCards from "@/src/components/StatsCards";
 import StatusFilter from "@/src/components/StatusFilter";
 import ApplicationForm from "@/src/components/ApplicationForm";
@@ -46,6 +55,7 @@ export default function DashboardClient({
     ApplicationStatus | undefined
   >(undefined);
   const [slideOverOpen, setSlideOverOpen] = useState(false);
+  const [editingApplication, setEditingApplication] = useState<IApplication | undefined>(undefined);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   // Load saved view mode from localStorage on mount
@@ -67,6 +77,7 @@ export default function DashboardClient({
 
   function handleCreated() {
     setSlideOverOpen(false);
+    setEditingApplication(undefined);
     handleRefresh();
   }
 
@@ -95,7 +106,7 @@ export default function DashboardClient({
         <div
           style={{
             padding: "20px 20px 16px",
-            borderBottom: "1px solid #E5E7EB",
+            borderBottom: "1px solid var(--color-border)",
             flexShrink: 0,
             display: "flex",
             alignItems: "center",
@@ -107,12 +118,12 @@ export default function DashboardClient({
             style={{
               fontSize: "20px",
               fontWeight: 700,
-              color: "#111827",
+              color: "var(--color-text-primary)",
               letterSpacing: "-0.3px",
             }}
           >
             Trackerr
-            <span style={{ color: "#3B82F6" }}>.</span>
+            <span style={{ color: "var(--color-accent)" }}>.</span>
           </span>
         </div>
 
@@ -125,21 +136,18 @@ export default function DashboardClient({
             className={`nav-item${view === "dashboard" ? " active" : ""}`}
             aria-current={view === "dashboard" ? "page" : undefined}
             onClick={() => { setView("dashboard"); setSelectedStatus(undefined); }}
+            style={{ display: "flex", alignItems: "center", gap: "8px", width: "100%" }}
           >
-            <span aria-hidden="true" style={{ fontSize: "16px" }}>
-              📊
-            </span>
+            <LayoutDashboard size={18} aria-hidden="true" />
             Dashboard
           </button>
           <button
             className={`nav-item${view === "all" ? " active" : ""}`}
             aria-current={view === "all" ? "page" : undefined}
             onClick={() => { setView("all"); setSelectedStatus(undefined); }}
-            style={{ marginTop: "4px" }}
+            style={{ marginTop: "4px", display: "flex", alignItems: "center", gap: "8px", width: "100%" }}
           >
-            <span aria-hidden="true" style={{ fontSize: "16px" }}>
-              📋
-            </span>
+            <ClipboardList size={18} aria-hidden="true" />
             All Internships
           </button>
         </nav>
@@ -148,7 +156,7 @@ export default function DashboardClient({
         <div
           style={{
             padding: "16px 12px",
-            borderTop: "1px solid #E5E7EB",
+            borderTop: "1px solid var(--color-border)",
             flexShrink: 0,
           }}
         >
@@ -178,7 +186,7 @@ export default function DashboardClient({
                   width: 32,
                   height: 32,
                   borderRadius: "50%",
-                  background: "#3B82F6",
+                  background: "var(--color-accent)",
                   color: "#fff",
                   display: "flex",
                   alignItems: "center",
@@ -195,10 +203,11 @@ export default function DashboardClient({
               style={{
                 fontSize: "13px",
                 fontWeight: 500,
-                color: "#374151",
+                color: "var(--color-text-primary)",
                 overflow: "hidden",
                 textOverflow: "ellipsis",
                 whiteSpace: "nowrap",
+                maxWidth: "140px",
               }}
             >
               {userName}
@@ -209,11 +218,9 @@ export default function DashboardClient({
           <button
             className="nav-item"
             onClick={() => signOut({ callbackUrl: "/" })}
-            style={{ color: "#6B7280" }}
+            style={{ color: "var(--color-text-secondary)", display: "flex", alignItems: "center", gap: "8px" }}
           >
-            <span aria-hidden="true" style={{ fontSize: "16px" }}>
-              🚪
-            </span>
+            <LogOut size={18} aria-hidden="true" />
             Sign out
           </button>
         </div>
@@ -228,8 +235,8 @@ export default function DashboardClient({
             alignItems: "center",
             justifyContent: "space-between",
             padding: "12px 16px",
-            background: "#FFFFFF",
-            borderBottom: "1px solid #E5E7EB",
+            background: "var(--color-surface)",
+            borderBottom: "1px solid var(--color-border)",
             position: "sticky",
             top: 0,
             zIndex: 40,
@@ -246,9 +253,7 @@ export default function DashboardClient({
                 border: "none",
                 cursor: "pointer",
                 padding: "4px",
-                fontSize: "20px",
-                lineHeight: 1,
-                color: "#374151",
+                color: "var(--color-text-primary)",
                 minWidth: "44px",
                 minHeight: "44px",
                 display: "flex",
@@ -256,7 +261,7 @@ export default function DashboardClient({
                 justifyContent: "center",
               }}
             >
-              ☰
+              <Menu size={24} />
             </button>
             <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
               <img src="/logo.png" alt="Trackerr Logo" width="24" height="24" style={{ borderRadius: "50%" }} />
@@ -264,24 +269,28 @@ export default function DashboardClient({
                 style={{
                   fontSize: "18px",
                   fontWeight: 700,
-                  color: "#111827",
+                  color: "var(--color-text-primary)",
                   letterSpacing: "-0.3px",
                 }}
               >
-                Trackerr<span style={{ color: "#3B82F6" }}>.</span>
+                Trackerr<span style={{ color: "var(--color-accent)" }}>.</span>
               </span>
             </div>
           </div>
           <button
-            onClick={() => setSlideOverOpen(true)}
+            onClick={() => {
+              setEditingApplication(undefined);
+              setSlideOverOpen(true);
+            }}
             aria-label="Add new application"
+            className="hover-btn-accent"
             style={{
               display: "flex",
               alignItems: "center",
               gap: "6px",
               height: "36px",
               padding: "0 14px",
-              background: "#3B82F6",
+              background: "var(--color-accent)",
               color: "#FFFFFF",
               border: "none",
               borderRadius: "8px",
@@ -290,7 +299,7 @@ export default function DashboardClient({
               cursor: "pointer",
             }}
           >
-            + Add
+            <Plus size={16} /> Add
           </button>
         </header>
 
@@ -314,17 +323,17 @@ export default function DashboardClient({
                 left: 0,
                 bottom: 0,
                 width: "240px",
-                background: "#FFFFFF",
+                background: "var(--color-surface)",
                 zIndex: 46,
                 display: "flex",
                 flexDirection: "column",
-                boxShadow: "0 20px 60px rgba(0,0,0,0.15)",
+                boxShadow: "var(--shadow-modal)",
               }}
             >
               <div
                 style={{
                   padding: "20px 20px 16px",
-                  borderBottom: "1px solid #E5E7EB",
+                  borderBottom: "1px solid var(--color-border)",
                   display: "flex",
                   alignItems: "center",
                   gap: "10px",
@@ -335,40 +344,41 @@ export default function DashboardClient({
                   style={{
                     fontSize: "20px",
                     fontWeight: 700,
-                    color: "#111827",
+                    color: "var(--color-text-primary)",
                     letterSpacing: "-0.3px",
                   }}
                 >
-                  Trackerr<span style={{ color: "#3B82F6" }}>.</span>
+                  Trackerr<span style={{ color: "var(--color-accent)" }}>.</span>
                 </span>
               </div>
               <nav style={{ flex: 1, padding: "16px 12px" }}>
                 <button
                   className={`nav-item${view === "dashboard" ? " active" : ""}`}
                   onClick={() => { setView("dashboard"); setSelectedStatus(undefined); setMobileMenuOpen(false); }}
+                  style={{ display: "flex", alignItems: "center", gap: "8px", width: "100%" }}
                 >
-                  <span aria-hidden="true">📊</span> Dashboard
+                  <LayoutDashboard size={18} aria-hidden="true" /> Dashboard
                 </button>
                 <button
                   className={`nav-item${view === "all" ? " active" : ""}`}
-                  style={{ marginTop: "4px" }}
+                  style={{ marginTop: "4px", display: "flex", alignItems: "center", gap: "8px", width: "100%" }}
                   onClick={() => { setView("all"); setSelectedStatus(undefined); setMobileMenuOpen(false); }}
                 >
-                  <span aria-hidden="true">📋</span> All Internships
+                  <ClipboardList size={18} aria-hidden="true" /> All Internships
                 </button>
               </nav>
               <div
                 style={{
                   padding: "16px 12px",
-                  borderTop: "1px solid #E5E7EB",
+                  borderTop: "1px solid var(--color-border)",
                 }}
               >
                 <button
                   className="nav-item"
                   onClick={() => signOut({ callbackUrl: "/" })}
-                  style={{ color: "#6B7280" }}
+                  style={{ color: "var(--color-text-secondary)", display: "flex", alignItems: "center", gap: "8px" }}
                 >
-                  <span aria-hidden="true">🚪</span> Sign out
+                  <LogOut size={18} aria-hidden="true" /> Sign out
                 </button>
               </div>
             </div>
@@ -398,41 +408,35 @@ export default function DashboardClient({
                 margin: 0,
                 fontSize: "24px",
                 fontWeight: 700,
-                color: "#111827",
+                color: "var(--color-text-primary)",
                 letterSpacing: "-0.3px",
               }}
             >
               {view === "dashboard" ? "Dashboard" : "All Internships"}
             </h1>
-            {/* Desktop "+ Add Application" button */}
+            {/* Desktop "+ Add Internship" button */}
             <button
-              onClick={() => setSlideOverOpen(true)}
-              className="desktop-add-btn"
+              onClick={() => {
+                setEditingApplication(undefined);
+                setSlideOverOpen(true);
+              }}
+              className="desktop-add-btn hover-btn-accent"
               style={{
                 display: "flex",
                 alignItems: "center",
                 gap: "6px",
                 height: "40px",
                 padding: "0 18px",
-                background: "#3B82F6",
+                background: "var(--color-accent)",
                 color: "#FFFFFF",
                 border: "none",
                 borderRadius: "8px",
                 fontSize: "14px",
                 fontWeight: 600,
                 cursor: "pointer",
-                transition: "background 150ms ease",
-              }}
-              onMouseEnter={(e) => {
-                (e.currentTarget as HTMLButtonElement).style.background =
-                  "#2563EB";
-              }}
-              onMouseLeave={(e) => {
-                (e.currentTarget as HTMLButtonElement).style.background =
-                  "#3B82F6";
               }}
             >
-              + Add Internship
+              <Plus size={16} /> Add Internship
             </button>
           </div>
 
@@ -444,24 +448,28 @@ export default function DashboardClient({
                 alignItems: "center",
                 justifyContent: "center",
                 padding: "80px 24px",
-                background: "#FFFFFF",
+                background: "var(--color-surface)",
                 borderRadius: "16px",
-                border: "1px solid #E5E7EB",
+                border: "1px solid var(--color-border)",
                 textAlign: "center",
                 gap: "16px",
-                boxShadow: "0 1px 3px rgba(0,0,0,0.05)",
+                boxShadow: "var(--shadow-card)",
                 marginTop: "20px",
               }}
             >
-              <span style={{ fontSize: "64px", lineHeight: 1 }}>🎓</span>
-              <h3 style={{ margin: 0, fontSize: "20px", fontWeight: 700, color: "#111827" }}>
+              <GraduationCap size={64} style={{ color: "var(--color-accent)" }} />
+              <h3 style={{ margin: 0, fontSize: "20px", fontWeight: 700, color: "var(--color-text-primary)" }}>
                 Welcome to Trackerr!
               </h3>
-              <p style={{ margin: 0, fontSize: "15px", color: "#6B7280", maxWidth: "420px", lineHeight: 1.5 }}>
+              <p style={{ margin: 0, fontSize: "15px", color: "var(--color-text-secondary)", maxWidth: "420px", lineHeight: 1.5 }}>
                 You haven't tracked any applications yet. Add your first internship to begin tracking your recruitment journey!
               </p>
               <button
-                onClick={() => setSlideOverOpen(true)}
+                onClick={() => {
+                  setEditingApplication(undefined);
+                  setSlideOverOpen(true);
+                }}
+                className="hover-btn-accent"
                 style={{
                   display: "inline-flex",
                   alignItems: "center",
@@ -469,45 +477,38 @@ export default function DashboardClient({
                   gap: "8px",
                   height: "44px",
                   padding: "0 24px",
-                  background: "#3B82F6",
+                  background: "var(--color-accent)",
                   color: "#FFFFFF",
                   border: "none",
                   borderRadius: "8px",
                   fontSize: "14px",
                   fontWeight: 600,
                   cursor: "pointer",
-                  transition: "background 150ms ease",
-                }}
-                onMouseEnter={(e) => {
-                  (e.currentTarget as HTMLButtonElement).style.background = "#2563EB";
-                }}
-                onMouseLeave={(e) => {
-                  (e.currentTarget as HTMLButtonElement).style.background = "#3B82F6";
                 }}
               >
-                + Add your first internship
+                <Plus size={16} /> Add your first internship
               </button>
             </div>
           ) : (
             <>
               {/* Stats Cards — only on Dashboard view */}
               {view === "dashboard" && (
-              <section aria-labelledby="stats-heading" style={{ marginBottom: "28px" }}>
-                <h2
-                  id="stats-heading"
-                  style={{
-                    margin: "0 0 14px",
-                    fontSize: "13px",
-                    fontWeight: 600,
-                    color: "#6B7280",
-                    textTransform: "uppercase",
-                    letterSpacing: "0.06em",
-                  }}
-                >
-                  Overview
-                </h2>
-                <StatsCards stats={stats} />
-              </section>
+                <section aria-labelledby="stats-heading" style={{ marginBottom: "28px" }}>
+                  <h2
+                    id="stats-heading"
+                    style={{
+                      margin: "0 0 14px",
+                      fontSize: "13px",
+                      fontWeight: 600,
+                      color: "var(--color-text-secondary)",
+                      textTransform: "uppercase",
+                      letterSpacing: "0.06em",
+                    }}
+                  >
+                    Overview
+                  </h2>
+                  <StatsCards stats={stats} />
+                </section>
               )}
 
               {/* Analytics Charts — only on Dashboard view */}
@@ -548,7 +549,7 @@ export default function DashboardClient({
                       margin: 0,
                       fontSize: "13px",
                       fontWeight: 600,
-                      color: "#6B7280",
+                      color: "var(--color-text-secondary)",
                       textTransform: "uppercase",
                       letterSpacing: "0.06em",
                     }}
@@ -561,7 +562,7 @@ export default function DashboardClient({
                           fontWeight: 400,
                           textTransform: "none",
                           letterSpacing: 0,
-                          color: "#9CA3AF",
+                          color: "var(--color-text-muted)",
                         }}
                       >
                         — {selectedStatus} ({filteredApplications.length})
@@ -574,25 +575,22 @@ export default function DashboardClient({
                     <ViewToggle currentView={viewMode} onViewChange={handleViewChange} />
                     <button
                       onClick={handleExportCSV}
+                      className="hover-btn-neutral"
                       style={{
                         padding: "8px 16px",
-                        backgroundColor: "#6366F1",
-                        color: "#FFFFFF",
-                        border: "none",
+                        backgroundColor: "var(--color-surface)",
+                        color: "var(--color-text-secondary)",
+                        border: "1px solid var(--color-border)",
                         borderRadius: "8px",
                         fontSize: "14px",
                         fontWeight: 600,
                         cursor: "pointer",
-                        transition: "background 150ms ease",
-                      }}
-                      onMouseEnter={(e) => {
-                        (e.currentTarget as HTMLButtonElement).style.backgroundColor = "#4F46E5";
-                      }}
-                      onMouseLeave={(e) => {
-                        (e.currentTarget as HTMLButtonElement).style.backgroundColor = "#6366F1";
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "6px",
                       }}
                     >
-                      📤 Export CSV
+                      <Download size={16} /> Export CSV
                     </button>
                     <CSVImporter userId={userId} onImportComplete={handleRefresh} />
                   </div>
@@ -600,13 +598,13 @@ export default function DashboardClient({
 
                 {/* Filter pills — only on Dashboard view */}
                 {view === "dashboard" && (
-                <div style={{ marginBottom: "20px" }}>
-                  <StatusFilter
-                    stats={stats}
-                    selectedStatus={selectedStatus}
-                    onFilter={(status) => setSelectedStatus(status)}
-                  />
-                </div>
+                  <div style={{ marginBottom: "20px" }}>
+                    <StatusFilter
+                      stats={stats}
+                      selectedStatus={selectedStatus}
+                      onFilter={(status) => setSelectedStatus(status)}
+                    />
+                  </div>
                 )}
 
                 {/* Application table or Kanban board */}
@@ -614,11 +612,19 @@ export default function DashboardClient({
                   <ApplicationList
                     applications={filteredApplications}
                     onRefresh={handleRefresh}
+                    onEdit={(app) => {
+                      setEditingApplication(app);
+                      setSlideOverOpen(true);
+                    }}
                   />
                 ) : (
                   <KanbanBoard
                     applications={filteredApplications}
                     onRefresh={handleRefresh}
+                    onEdit={(app) => {
+                      setEditingApplication(app);
+                      setSlideOverOpen(true);
+                    }}
                   />
                 )}
               </section>
@@ -630,15 +636,28 @@ export default function DashboardClient({
       {/* ── Slide-over panel ── */}
       <SlideOver
         isOpen={slideOverOpen}
-        onClose={() => setSlideOverOpen(false)}
-        title="← Add Internship"
+        onClose={() => {
+          setSlideOverOpen(false);
+          setEditingApplication(undefined);
+        }}
+        title={editingApplication ? "← Edit Internship" : "← Add Internship"}
       >
         <ApplicationForm
-          onCancel={() => setSlideOverOpen(false)}
+          application={editingApplication}
+          onCancel={() => {
+            setSlideOverOpen(false);
+            setEditingApplication(undefined);
+          }}
           onCreated={handleCreated}
+          onUpdated={() => {
+            setSlideOverOpen(false);
+            setEditingApplication(undefined);
+            handleRefresh();
+          }}
           showToast={showToast}
         />
       </SlideOver>
     </div>
   );
 }
+
