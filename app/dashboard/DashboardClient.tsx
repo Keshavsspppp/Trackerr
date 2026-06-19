@@ -69,7 +69,7 @@ export default function DashboardClient({
 
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [showShortcutsModal, setShowShortcutsModal] = useState(false);
-  const [analyticsOpen, setAnalyticsOpen] = useState(false); // Collapsed by default
+  const [analyticsOpen, setAnalyticsOpen] = useState(true); // Open by default
   const [theme, setTheme] = useState<'light' | 'dark' | 'system'>('system');
   const [demoApps, setDemoApps] = useState<IApplication[]>([]);
   const [isFormDirty, setIsFormDirty] = useState(false);
@@ -239,9 +239,16 @@ export default function DashboardClient({
     }
     const total = activeApps.length;
     const interviewRate = total === 0 ? 0 : (byStatus.Interview + byStatus.Offer) / total;
+    // Cumulative funnel counts
+    const funnelApplied = total;
+    const funnelInterview = byStatus.Interview + byStatus.Offer;
+    const funnelOffer = byStatus.Offer;
     return {
       total,
       byStatus,
+      funnelApplied,
+      funnelInterview,
+      funnelOffer,
       interviewRate,
       trends: initialStats.trends,
     };
@@ -956,14 +963,14 @@ export default function DashboardClient({
           {isDemo && (
             <div className="demo-banner">
               <span>
-                <strong>Demo Sandbox Mode:</strong> You are playing with mock data in-memory. Sign in to save your own applications permanently.
+                <strong>Demo Sandbox Mode:</strong> Changes are temporary — data resets on refresh. Sign up free to save your own applications permanently.
               </span>
               <button
                 onClick={() => router.push("/")}
                 className="btn-primary"
-                style={{ height: "28px", padding: "0 12px", fontSize: "12px", borderRadius: "4px" }}
+                style={{ height: "28px", padding: "0 12px", fontSize: "12px", borderRadius: "4px", whiteSpace: "nowrap", flexShrink: 0 }}
               >
-                Go to Sign In
+                Sign up free →
               </button>
             </div>
           )}
@@ -1254,9 +1261,9 @@ export default function DashboardClient({
                       <StatsCards stats={stats} />
                       <FunnelChart
                         stats={{
-                          applied: stats.byStatus.Applied + stats.byStatus.Interview + stats.byStatus.Offer + stats.byStatus.Rejected,
-                          interview: stats.byStatus.Interview + stats.byStatus.Offer,
-                          offer: stats.byStatus.Offer,
+                          applied: stats.funnelApplied ?? (stats.byStatus.Applied + stats.byStatus.Interview + stats.byStatus.Offer + stats.byStatus.Rejected),
+                          interview: stats.funnelInterview ?? (stats.byStatus.Interview + stats.byStatus.Offer),
+                          offer: stats.funnelOffer ?? stats.byStatus.Offer,
                           rejected: stats.byStatus.Rejected,
                         }}
                       />

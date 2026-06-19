@@ -16,7 +16,10 @@ export const metadata: Metadata = {
   title: "Trackerr — Internship Tracker",
   description: "Track every application, land the internship. Free, no ads, your data.",
   icons: {
-    icon: '/logo.png',
+    icon: [
+      { url: '/favicon.ico', sizes: '16x16', type: 'image/x-icon' },
+      { url: '/logo.png', sizes: '512x512' },
+    ],
   },
   manifest: '/site.webmanifest',
   openGraph: {
@@ -36,7 +39,7 @@ export const metadata: Metadata = {
     type: 'website',
   },
   twitter: {
-    card: 'summary',
+    card: 'summary_large_image',
     title: 'Trackerr — Internship Tracker',
     description: 'Track every application, land the internship. Free, no ads, your data.',
     images: ['/logo.png'],
@@ -53,6 +56,7 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
+  themeColor: '#3B82F6',
 };
 
 export default function RootLayout({

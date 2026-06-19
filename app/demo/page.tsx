@@ -213,7 +213,14 @@ export default function DemoPage() {
   }
 
   const total = DEMO_APPLICATIONS.length;
-  const interviewRate = total === 0 ? 0 : (byStatus.Interview + byStatus.Offer) / total;
+
+  // Cumulative funnel: everyone who reached this stage or further
+  // (Applied = all 15 started here; Interview = those who progressed to interview or offer)
+  const funnelApplied = total;                                   // 15
+  const funnelInterview = byStatus.Interview + byStatus.Offer;   // 6
+  const funnelOffer = byStatus.Offer;                            // 1
+
+  const interviewRate = total === 0 ? 0 : funnelInterview / funnelApplied;
 
   const trends = {
     totalDelta: 4,
@@ -227,6 +234,9 @@ export default function DemoPage() {
   const stats: IApplicationStats = {
     total,
     byStatus,
+    funnelApplied,
+    funnelInterview,
+    funnelOffer,
     interviewRate,
     trends
   };

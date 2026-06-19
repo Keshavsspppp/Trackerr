@@ -12,6 +12,10 @@ export interface IApplicationStats {
     Offer: number;
     Rejected: number;
   };
+  // Cumulative funnel counts: everyone who reached this stage or further
+  funnelApplied?: number;   // total
+  funnelInterview?: number; // Interview + Offer
+  funnelOffer?: number;     // Offer
   interviewRate: number; // (Interview + Offer) / total, or 0 if total === 0
   trends?: {
     totalDelta: number;
@@ -110,9 +114,17 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
       interviewRateDelta: last30InterviewRate - prior30InterviewRate,
     };
 
+    // Cumulative funnel: everyone who ever reached this stage or further
+    const funnelApplied = total; // everyone started here
+    const funnelInterview = byStatus.Interview + byStatus.Offer;
+    const funnelOffer = byStatus.Offer;
+
     const stats: IApplicationStats = {
       total,
       byStatus,
+      funnelApplied,
+      funnelInterview,
+      funnelOffer,
       interviewRate,
       trends,
     };
