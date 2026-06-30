@@ -138,6 +138,21 @@ cp .env.example .env
 npm run dev
 ```
 
+### Running with Docker
+
+You can easily run this application using Docker, which is optimized with a Next.js standalone multi-stage build.
+
+```bash
+# 1. Build the Docker image
+docker build -t jobtracker-app .
+
+# 2. Run the Docker container
+# Make sure your .env file is populated with the required environment variables
+docker run -p 3000:3000 --env-file .env jobtracker-app
+```
+
+Then visit `http://localhost:3000` in your browser.
+
 ### Environment Variables Config
 
 Fill out the following variables in your `.env` file:
