@@ -14,6 +14,7 @@ process.emitWarning = function (warning, ...args) {
 
 const nextConfig: NextConfig = {
   compress: true, // Enable gzip compression for API responses and static assets
+  output: 'standalone',
 };
 
 export default nextConfig;
