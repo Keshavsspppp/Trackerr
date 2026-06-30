@@ -28,9 +28,9 @@
 
 ## ✨ Overview
 
-Applying for internships can feel like a full-time job. With hundreds of applications across different platforms, tracking deadlines, follow-ups, and interviews is overwhelming. 
+Applying for internships can feel like a full-time job. With hundreds of applications across different platforms, tracking deadlines, follow-ups, and interviews is overwhelming.
 
-**Trackerr** solves this. It's a production-ready, feature-rich web application designed specifically for students and active seekers. Log applications, visualize your progress with interactive **Kanban boards**, analyze your application velocity, view your conversion rate with a **funnel chart**, and receive automated **daily email reminders** when applications have gone cold—all behind secure Google authentication.
+**Trackerr** solves this. It's a production-ready, feature-rich web application designed specifically for students and active seekers. Log applications, visualize your progress with interactive **Kanban boards**, analyze your application velocity, view your conversion rate with a **funnel chart**, and receive automated **daily email reminders** when applications have gone cold — all behind secure Google authentication.
 
 ---
 
@@ -48,7 +48,7 @@ Unlike generic trackers, Trackerr is built specifically for the **internship** l
 ## 🚀 Key Features
 
 * 🔐 **Secure Google Auth & JWT:** Zero passwords. Powered by NextAuth.js and stateless, lightweight JWT sessions for speed.
-* 📋 **Double Views (Kanban & List):** 
+* 📋 **Double Views (Kanban & List):**
   * **Kanban Board:** Drag and drop cards to change status (Applied, Interviewing, Offer, Rejected).
   * **List Table:** Clean table with search, status filtering, and quick actions.
 * 📊 **Analytics Dashboard:**
@@ -144,11 +144,11 @@ You can easily run this application using Docker, which is optimized with a Next
 
 ```bash
 # 1. Build the Docker image
-docker build -t jobtracker-app .
+docker build -t trackerr-app .
 
 # 2. Run the Docker container
 # Make sure your .env file is populated with the required environment variables
-docker run -p 3000:3000 --env-file .env jobtracker-app
+docker run -p 3000:3000 --env-file .env trackerr-app
 ```
 
 Then visit `http://localhost:3000` in your browser.
@@ -180,7 +180,7 @@ Fill out the following variables in your `.env` file:
 
 ## 💡 Using the Demo CSV
 
-A demo dataset is available at [demo-applications.csv](file:///c:/Users/thebo/Desktop/project/jobtracker/public/demo-applications.csv) containing 15 mock internship entries (Applied, Interviewing, Offer, Rejected) with various application dates and sources (LinkedIn, Glassdoor, Direct, Referral).
+A demo dataset is available at [`public/demo-applications.csv`](public/demo-applications.csv) containing 15 mock internship entries (Applied, Interviewing, Offer, Rejected) with various application dates and sources (LinkedIn, Glassdoor, Direct, Referral).
 
 To load it:
 1. Launch Trackerr and sign in.
@@ -224,7 +224,7 @@ Deploying to Vercel is seamless:
 > **MongoDB Network Access Whitelist**: While developing locally, allowing all IPs (`0.0.0.0/0`) is common practice. In production, however, lock down your MongoDB Atlas network access to only accept connections from Vercel's IP ranges (or utilize Vercel's official MongoDB integration/peer connections) to prevent brute-force database attacks.
 
 ### 2. Scheduled Cron Job
-The daily cron job configuration is defined in `vercel.json` and runs automatically every day at 09:00 UTC. 
+The daily cron job configuration is defined in `vercel.json` and runs automatically every day at 09:00 UTC.
 
 To manually invoke it or test it from your local terminal:
 ```bash
